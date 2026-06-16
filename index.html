@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1117">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vault">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Vault — Private Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f1117; --surface:#171b26; --surface2:#1e2333; --border:#2a3045;
+  --amber:#e8a94d; --amber-dim:#c4883a; --amber-glow:rgba(232,169,77,0.18);
+  --text:#e8eaf0; --muted:#7a8499; --dim:#4a5268;
+  --red:#e05c5c; --green:#5ce08a; --blue:#5c9ee0;
+  --r:14px; --rs:10px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{height:100%;overflow:hidden;}
+body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;-webkit-text-size-adjust:100%;}
+
+/* ── SCREENS ── */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s;}
+.screen.hidden{transform:translateX(100%);opacity:0;pointer-events:none;}
+.screen.slide-left{transform:translateX(-30%);opacity:0;pointer-events:none;}
+
+/* ── LOCK SCREEN ── */
+#s-lock{align-items:center;justify-content:center;padding:40px 28px;padding-top:calc(var(--safe-top) + 40px);}
+#s-lock.unlocking{opacity:0;transform:scale(1.05);}
+.lock-icon{width:76px;height:76px;margin-bottom:24px;position:relative;}
+.lock-body{width:50px;height:36px;border-radius:8px;background:var(--surface2);border:2.5px solid var(--border);position:absolute;bottom:0;left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;transition:border-color .4s,box-shadow .4s;}
+.lock-shackle{width:28px;height:24px;border:2.5px solid var(--border);border-bottom:none;border-radius:14px 14px 0 0;position:absolute;top:0;left:50%;transform:translateX(-50%);transition:border-color .4s,transform .4s;}
+.lock-keyhole{width:10px;height:10px;border-radius:50%;background:var(--dim);transition:background .4s;}
+.lock-icon.open .lock-body{border-color:var(--amber);box-shadow:0 0 28px var(--amber-glow);}
+.lock-icon.open .lock-shackle{border-color:var(--amber);transform:translateX(-50%) translateY(-7px) rotate(-28deg);}
+.lock-icon.open .lock-keyhole{background:var(--amber);}
+.lock-title{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px;}
+.lock-sub{color:var(--muted);font-size:14px;margin-bottom:40px;text-align:center;}
+.lock-form{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;}
+.lock-pw-wrap{position:relative;}
+.lock-input{width:100%;padding:16px 48px 16px 20px;font-size:18px;font-family:inherit;background:var(--surface);border:2px solid var(--border);border-radius:var(--r);color:var(--text);outline:none;text-align:center;letter-spacing:4px;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;}
+.lock-input:focus{border-color:var(--amber);box-shadow:0 0 0 4px var(--amber-glow);}
+.lock-input.shake{animation:shake .4s ease;}
+.lock-input.error{border-color:var(--red);}
+.pw-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:6px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.lock-err{color:var(--red);font-size:13px;text-align:center;min-height:18px;}
+.btn-primary{width:100%;padding:17px;font-size:16px;font-weight:700;font-family:inherit;background:var(--amber);color:#0f1117;border:none;border-radius:var(--r);cursor:pointer;transition:opacity .15s,transform .1s;min-height:56px;}
+.btn-primary:active{opacity:.85;transform:scale(.98);}
+.lock-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;}
+.lock-link{font-size:13px;color:var(--amber);cursor:pointer;padding:8px 4px;min-height:44px;display:flex;align-items:center;}
+
+/* ── TOP BAR ── */
+.topbar{display:flex;align-items:center;gap:8px;padding:12px 16px;padding-top:calc(var(--safe-top) + 12px);background:var(--surface);border-bottom:1px solid var(--border);min-height:60px;flex-shrink:0;}
+.topbar-title{font-size:17px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topbar-btn{min-width:44px;min-height:44px;border-radius:var(--rs);background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;}
+.topbar-btn:active{background:var(--surface2);color:var(--text);}
+.topbar-btn.amber{color:var(--amber);}
+.topbar-btn.red{color:var(--red);}
+
+/* ── NOTE LIST SCREEN ── */
+#s-list{padding-top:0;}
+.list-search{padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.search-inner{position:relative;}
+.search-inner input{width:100%;padding:10px 14px 10px 38px;font-size:14px;font-family:inherit;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--text);outline:none;-webkit-appearance:none;transition:border-color .2s;}
+.search-inner input:focus{border-color:var(--amber);}
+.search-inner input::placeholder{color:var(--dim);}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:14px;pointer-events:none;}
+.tags-bar{padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:6px;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tags-bar::-webkit-scrollbar{display:none;}
+.tag-chip{padding:5px 12px;font-size:12px;border-radius:20px;cursor:pointer;background:var(--bg);border:1px solid var(--border);color:var(--muted);white-space:nowrap;min-height:34px;display:flex;align-items:center;transition:all .15s;flex-shrink:0;}
+.tag-chip.active{background:var(--amber-glow);border-color:var(--amber);color:var(--amber);}
+.notes-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.notes-scroll::-webkit-scrollbar{display:none;}
+.note-item{padding:15px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;display:flex;align-items:flex-start;gap:10px;}
+.note-item:active{background:var(--surface2);}
+.note-item-body{flex:1;min-width:0;}
+.note-pin-icon{font-size:12px;color:var(--amber);flex-shrink:0;margin-top:2px;}
+.note-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.note-preview{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px;}
+.note-foot{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.note-date{font-size:11.5px;color:var(--dim);}
+.note-tag-sm{font-size:11px;padding:2px 7px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--dim);}
+.notes-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--dim);text-align:center;padding:40px 20px;gap:10px;}
+.empty-icon{font-size:48px;opacity:.3;}
+.empty-text{font-size:15px;color:var(--muted);font-weight:500;}
+.empty-sub{font-size:13px;}
+
+/* FAB */
+.fab{position:fixed;bottom:calc(var(--safe-bottom) + 20px);right:20px;width:60px;height:60px;border-radius:30px;background:var(--amber);color:#0f1117;border:none;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(232,169,77,.4);transition:transform .15s,box-shadow .15s;z-index:10;}
+.fab:active{transform:scale(.93);box-shadow:0 2px 10px rgba(232,169,77,.3);}
+
+/* ── EDITOR SCREEN ── */
+#s-editor{padding-top:0;}
+.editor-meta-bar{padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap;flex-shrink:0;}
+.meta-pill{font-size:11.5px;color:var(--dim);display:flex;align-items:center;gap:3px;}
+.meta-pill strong{color:var(--muted);}
+.active-tags-row{display:flex;gap:5px;flex-wrap:wrap;}
+.atag{font-size:11px;padding:3px 8px;border-radius:20px;background:var(--amber-glow);border:1px solid var(--amber-dim);color:var(--amber);display:flex;align-items:center;gap:3px;cursor:default;}
+.atag button{background:none;border:none;color:var(--amber);cursor:pointer;font-size:11px;padding:0 0 0 2px;line-height:1;min-width:20px;min-height:20px;display:flex;align-items:center;justify-content:center;}
+#noteTitle{width:100%;padding:16px;font-size:20px;font-weight:700;font-family:'Inter',sans-serif;background:var(--bg);border:none;border-bottom:1px solid var(--border);outline:none;color:var(--text);flex-shrink:0;}
+#noteTitle::placeholder{color:var(--dim);}
+#noteBody{flex:1;padding:16px;font-size:16px;line-height:1.85;font-family:'Lora',serif;background:var(--bg);border:none;outline:none;resize:none;color:var(--text);-webkit-overflow-scrolling:touch;}
+#noteBody::placeholder{color:var(--dim);font-style:italic;}
+.editor-foot{padding:10px 16px;padding-bottom:calc(var(--safe-bottom) + 10px);background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.foot-stat{font-size:11px;color:var(--dim);}
+.foot-stat span{color:var(--muted);}
+.as-row{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim);}
+.as-dot{width:6px;height:6px;border-radius:50%;background:var(--dim);}
+.as-dot.saving{background:var(--amber);animation:pulse 1s infinite;}
+.as-dot.saved{background:var(--green);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── BOTTOM SHEET ── */
+.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;opacity:0;transition:opacity .3s;pointer-events:none;}
+.sheet-overlay.open{opacity:1;pointer-events:all;}
+.bottom-sheet{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;z-index:51;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);padding-bottom:calc(var(--safe-bottom) + 8px);max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.bottom-sheet.open{transform:translateY(0);}
+.sheet-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:12px auto 16px;}
+.sheet-title{font-size:15px;font-weight:700;padding:0 20px 12px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+.sheet-item{display:flex;align-items:center;gap:14px;padding:16px 20px;font-size:15px;cursor:pointer;transition:background .15s;min-height:56px;}
+.sheet-item:active{background:var(--surface2);}
+.sheet-item-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0;}
+.sheet-item-text{flex:1;}
+.sheet-item-label{font-size:15px;font-weight:500;}
+.sheet-item-sub{font-size:12px;color:var(--muted);margin-top:1px;}
+.sheet-item.red .sheet-item-label{color:var(--red);}
+.sheet-item.amber .sheet-item-label{color:var(--amber);}
+.sheet-sep{height:1px;background:var(--border);margin:4px 0;}
+
+/* ── TAG SHEET ── */
+.tag-sheet-input{margin:12px 20px;padding:12px 16px;font-size:15px;font-family:inherit;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--text);outline:none;width:calc(100% - 40px);-webkit-appearance:none;transition:border-color .2s;}
+.tag-sheet-input:focus{border-color:var(--amber);}
+.tag-sheet-input::placeholder{color:var(--dim);}
+.tag-sheet-hint{font-size:12px;color:var(--dim);padding:0 20px 8px;}
+.tag-list{padding:0 12px 8px;}
+.tag-pill-row{display:flex;flex-wrap:wrap;gap:6px;padding:8px 20px;}
+.tag-pill{padding:7px 14px;border-radius:20px;font-size:13px;border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;min-height:36px;}
+.tag-pill.on{background:var(--amber-glow);border-color:var(--amber);color:var(--amber);}
+
+/* ── MODAL (full-screen on mobile) ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:80;opacity:0;pointer-events:none;transition:opacity .25s;display:flex;align-items:flex-end;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(var(--safe-bottom) + 20px);width:100%;max-height:90vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 18px;}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:6px;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5;}
+.modal-input{width:100%;padding:14px 16px;font-size:16px;font-family:inherit;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--text);outline:none;margin-bottom:10px;-webkit-appearance:none;transition:border-color .2s;}
+.modal-input:focus{border-color:var(--amber);}
+.modal-err{font-size:13px;color:var(--red);min-height:18px;margin-bottom:6px;}
+.modal-check{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);margin-bottom:14px;cursor:pointer;min-height:44px;}
+.modal-check input{accent-color:var(--amber);width:18px;height:18px;flex-shrink:0;}
+.modal-actions{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
+.modal-btn{width:100%;padding:15px;font-size:15px;font-weight:700;font-family:inherit;border-radius:var(--r);cursor:pointer;border:none;min-height:52px;transition:opacity .15s;}
+.modal-btn:active{opacity:.8;}
+.modal-btn.confirm{background:var(--amber);color:#0f1117;}
+.modal-btn.blue{background:var(--blue);color:#fff;}
+.modal-btn.danger{background:var(--red);color:#fff;}
+.modal-btn.cancel{background:var(--surface2);color:var(--muted);}
+.file-drop{border:2px dashed var(--border);border-radius:var(--rs);padding:24px 16px;text-align:center;color:var(--dim);font-size:14px;cursor:pointer;margin-bottom:12px;transition:border-color .2s,background .2s;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+.file-drop.ready{border-color:var(--green);background:rgba(92,224,138,.06);color:var(--green);}
+.file-drop input{display:none;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:calc(var(--safe-bottom) + 80px);left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:11px 20px;border-radius:var(--r);font-size:13.5px;opacity:0;transition:opacity .25s,transform .25s;z-index:300;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast.success{border-color:var(--green);color:var(--green);}
+#toast.error{border-color:var(--red);color:var(--red);}
+#toast.info{border-color:var(--blue);color:var(--blue);}
+</style>
+</head>
+<body>
+
+<!-- ══ LOCK SCREEN ══ -->
+<div class="screen" id="s-lock">
+  <div class="lock-icon" id="lockIcon">
+    <div class="lock-shackle"></div>
+    <div class="lock-body"><div class="lock-keyhole"></div></div>
+  </div>
+  <div class="lock-title">Vault</div>
+  <div class="lock-sub" id="lockSub">Your private notes are protected.</div>
+  <div class="lock-form">
+    <div class="lock-pw-wrap" id="lockPwWrap">
+      <input type="password" class="lock-input" id="lockInput" placeholder="Password" autocomplete="current-password" inputmode="text">
+      <button class="pw-toggle" onclick="togglePwVis('lockInput',this)" type="button">👁</button>
+    </div>
+    <div class="lock-err" id="lockErr"></div>
+    <button class="btn-primary" id="unlockBtn" onclick="handleLockBtn()">Unlock</button>
+    <div class="lock-links" id="lockLinks">
+      <span class="lock-link" onclick="showSetupModal()">🔑 Set password</span>
+      <span class="lock-link" onclick="openImportModal()">📂 Open vault file</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NOTE LIST SCREEN ══ -->
+<div class="screen hidden" id="s-list">
+  <div class="topbar">
+    <span class="topbar-title">🔐 Vault Notes</span>
+    <button class="topbar-btn" onclick="openImportModal()" title="Open file">📂</button>
+    <button class="topbar-btn" onclick="showListMenu()" title="Menu">⋯</button>
+  </div>
+  <div class="list-search">
+    <div class="search-inner">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search notes…" oninput="renderList()">
+    </div>
+  </div>
+  <div class="tags-bar" id="tagsBar">
+    <span class="tag-chip active" data-tag="all" onclick="filterTag(this)">All</span>
+  </div>
+  <div class="notes-scroll" id="notesList"></div>
+  <button class="fab" onclick="newNote()" title="New note">＋</button>
+</div>
+
+<!-- ══ EDITOR SCREEN ══ -->
+<div class="screen hidden" id="s-editor">
+  <div class="topbar">
+    <button class="topbar-btn" onclick="goList()" title="Back">←</button>
+    <span class="topbar-title" id="editorTopTitle">New Note</span>
+    <button class="topbar-btn amber" id="pinTopBtn" onclick="togglePin()" title="Pin">📌</button>
+    <button class="topbar-btn" onclick="openNoteMenu()" title="More">⋯</button>
+  </div>
+  <div class="editor-meta-bar" id="editorMetaBar">
+    <div class="meta-pill">📅 <strong id="metaCreated">—</strong></div>
+    <div class="meta-pill">✏️ <strong id="metaEdited">—</strong></div>
+    <div class="active-tags-row" id="activeTags"></div>
+    <button class="topbar-btn" onclick="openTagSheet()" title="Tags" style="font-size:14px;min-width:34px;min-height:34px;">🏷 Tags</button>
+  </div>
+  <input type="text" id="noteTitle" placeholder="Title…" oninput="onEdit()">
+  <textarea id="noteBody" placeholder="Write something… your words are safe here." oninput="onEdit()"></textarea>
+  <div class="editor-foot">
+    <div class="foot-stat">Words: <span id="statWords">0</span></div>
+    <div class="foot-stat">Chars: <span id="statChars">0</span></div>
+    <div class="as-row"><div class="as-dot" id="asDot"></div><span id="asLabel">—</span></div>
+  </div>
+</div>
+
+<!-- ══ BOTTOM SHEETS ══ -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+
+<!-- List menu sheet -->
+<div class="bottom-sheet" id="sheetListMenu">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Vault Options</div>
+  <div class="sheet-item" onclick="closeSheet();showExportModal(false)">
+    <span class="sheet-item-icon">💾</span>
+    <div class="sheet-item-text"><div class="sheet-item-label">Save vault file</div><div class="sheet-item-sub">Export all notes encrypted</div></div>
+  </div>
+  <div class="sheet-item" onclick="closeSheet();openImportModal()">
+    <span class="sheet-item-icon">📂</span>
+    <div class="sheet-item-text"><div class="sheet-item-label">Open vault file</div><div class="sheet-item-sub">Import encrypted .vault file</div></div>
+  </div>
+  <div class="sheet-sep"></div>
+  <div class="sheet-item" onclick="closeSheet();showChangePassword()">
+    <span class="sheet-item-icon">🔑</span>
+    <div class="sheet-item-text"><div class="sheet-item-label">Change password</div></div>
+  </div>
+  <div class="sheet-item" onclick="closeSheet();lockVault()">
+    <span class="sheet-item-icon">🔒</span>
+    <div class="sheet-item-text"><div class="sheet-item-label">Lock vault</div></div>
+  </div>
+</div>
+
+<!-- Note action sheet -->
+<div class="bottom-sheet" id="sheetNoteMenu">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Note Options</div>
+  <div class="sheet-item" onclick="closeSheet();saveNote()">
+    <span class="sheet-item-icon">💾</span>
+    <div class="sheet-item-text"><div class="sheet-item-label">Save note</div></div>
+  </div>
+  <div class="sheet-item" id="pinSheetItem" onclick="closeSheet();togglePin()">
+    <span class="sheet-item-icon">📌</span>
+    <div class="sheet-item-text"><div class="sheet-item-label" id="pinSheetLabel">Pin note</div></div>
+  </div>
+  <div class="sheet-item" onclick="closeSheet();openTagSheet()">
+    <span class="sheet-item-icon">🏷</span>
+    <div class="sheet-item-text"><div class="sheet-item-label">Manage tags</div></div>
+  </div>
+  <div class="sheet-item" onclick="closeSheet();showExportModal(true)">
+    <span class="sheet-item-icon">📤</span>
+    <div class="sheet-item-text"><div class="sheet-item-label">Share this note</div><div class="sheet-item-sub">Export as encrypted file</div></div>
+  </div>
+  <div class="sheet-sep"></div>
+  <div class="sheet-item red" onclick="closeSheet();confirmDelete()">
+    <span class="sheet-item-icon">🗑</span>
+    <div class="sheet-item-text"><div class="sheet-item-label">Delete note</div></div>
+  </div>
+</div>
+
+<!-- Tag sheet -->
+<div class="bottom-sheet" id="sheetTags">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Manage Tags</div>
+  <input type="text" class="tag-sheet-input" id="tagSheetInput" placeholder="Type a tag and tap Add…">
+  <div class="tag-sheet-hint">Tap Add or press Enter to add. Tap a tag below to remove it.</div>
+  <div style="padding:0 20px 12px;"><button class="btn-primary" style="padding:12px;font-size:14px;" onclick="addTagFromSheet()">Add Tag</button></div>
+  <div class="tag-pill-row" id="tagPillRow"></div>
+</div>
+
+<!-- ══ MODALS ══ -->
+
+<!-- Setup / Change Password -->
+<div class="modal-overlay" id="modalPassword">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="pwTitle">Set Your Password</div>
+    <div class="modal-sub" id="pwSub">Choose a strong password to protect your vault.</div>
+    <div style="position:relative;">
+      <input type="password" class="modal-input" id="pwNew" placeholder="New password" autocomplete="new-password">
+      <button class="pw-toggle" onclick="togglePwVis('pwNew',this)" style="top:50%;right:14px;transform:translateY(-50%);position:absolute;">👁</button>
+    </div>
+    <input type="password" class="modal-input" id="pwConfirm" placeholder="Confirm password" autocomplete="new-password">
+    <div class="modal-err" id="pwErr"></div>
+    <div class="modal-actions">
+      <button class="modal-btn confirm" onclick="savePassword()">Set Password</button>
+      <button class="modal-btn cancel" onclick="closeModal('modalPassword')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete -->
+<div class="modal-overlay" id="modalDelete">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Delete this note?</div>
+    <div class="modal-sub">This cannot be undone. The note will be permanently removed from your vault.</div>
+    <div class="modal-actions">
+      <button class="modal-btn danger" onclick="deleteNote()">Delete forever</button>
+      <button class="modal-btn cancel" onclick="closeModal('modalDelete')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export -->
+<div class="modal-overlay" id="modalExport">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="exportTitle">💾 Save Vault File</div>
+    <div class="modal-sub" id="exportSub">Export as an encrypted .vault file. Anyone who opens it still needs the password.</div>
+    <div style="position:relative;">
+      <input type="password" class="modal-input" id="exportPw" placeholder="Password for this file">
+      <button class="pw-toggle" onclick="togglePwVis('exportPw',this)" style="top:50%;right:14px;transform:translateY(-50%);position:absolute;">👁</button>
+    </div>
+    <input type="password" class="modal-input" id="exportPwC" placeholder="Confirm password">
+    <label class="modal-check"><input type="checkbox" id="exportSingle"> Export only the current note</label>
+    <div class="modal-err" id="exportErr"></div>
+    <div class="modal-actions">
+      <button class="modal-btn blue" onclick="doExport()">⬇ Download .vault file</button>
+      <button class="modal-btn cancel" onclick="closeModal('modalExport')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import -->
+<div class="modal-overlay" id="modalImport">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📂 Open Vault File</div>
+    <div class="modal-sub">Select an encrypted .vault file, then enter its password.</div>
+    <div class="file-drop" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" accept=".vault,.json" onchange="fileSelected(event)">
+      <span style="font-size:28px">📁</span>
+      <span id="dropLabel">Tap to choose a .vault file</span>
+    </div>
+    <div style="position:relative;">
+      <input type="password" class="modal-input" id="importPw" placeholder="File password">
+      <button class="pw-toggle" onclick="togglePwVis('importPw',this)" style="top:50%;right:14px;transform:translateY(-50%);position:absolute;">👁</button>
+    </div>
+    <label class="modal-check"><input type="checkbox" id="importMerge" checked> Merge with current notes</label>
+    <div class="modal-err" id="importErr"></div>
+    <div class="modal-actions">
+      <button class="modal-btn confirm" onclick="doImport()">Unlock & Import</button>
+      <button class="modal-btn cancel" onclick="closeModal('modalImport')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── CONSTANTS ──
+const VAULT_KEY  = 'vault_notes_v1';
+const VAULT_HASH = 'vault_pw_hash';
+const VAULT_SALT = 'vault_pw_salt';
+
+// ── STATE ──
+let notes        = [];
+let currentId    = null;
+let activeFilter = 'all';
+let asTimer      = null;
+let isFirstTime  = false;
+let importFileData = null;
+let activeSheet  = null;
+
+// ── CRYPTO ──
+async function deriveKey(pw, salt, usage) {
+  const enc = new TextEncoder();
+  const raw = await crypto.subtle.importKey('raw', enc.encode(pw), {name:'PBKDF2'}, false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt:enc.encode(salt), iterations:200000, hash:'SHA-256'},
+    raw, {name:'AES-GCM', length:256}, false, usage
+  );
+}
+async function hashPw(pw, salt) {
+  const enc = new TextEncoder();
+  const raw = await crypto.subtle.importKey('raw', enc.encode(pw), {name:'PBKDF2'}, false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    {name:'PBKDF2', salt:enc.encode(salt), iterations:200000, hash:'SHA-256'}, raw, 256
+  );
+  return btoa(String.fromCharCode(...new Uint8Array(bits)));
+}
+function mkSalt() { return btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16)))); }
+async function encryptData(plain, pw) {
+  const salt = mkSalt(), iv = crypto.getRandomValues(new Uint8Array(12));
+  const key  = await deriveKey(pw, salt, ['encrypt']);
+  const ct   = await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, new TextEncoder().encode(plain));
+  return JSON.stringify({v:1, salt, iv:btoa(String.fromCharCode(...iv)), ct:btoa(String.fromCharCode(...new Uint8Array(ct)))});
+}
+async function decryptData(json, pw) {
+  const o  = JSON.parse(json);
+  const iv = Uint8Array.from(atob(o.iv), c=>c.charCodeAt(0));
+  const ct = Uint8Array.from(atob(o.ct), c=>c.charCodeAt(0));
+  const key= await deriveKey(pw, o.salt, ['decrypt']);
+  return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv}, key, ct));
+}
+
+// ── INIT ──
+window.onload = () => {
+  const hash = localStorage.getItem(VAULT_HASH);
+  if (!hash) {
+    isFirstTime = true;
+    document.getElementById('lockPwWrap').style.display = 'none';
+    document.getElementById('unlockBtn').textContent    = '→ Get started';
+    document.getElementById('lockSub').textContent      = 'Welcome! Set a password to begin.';
+    document.getElementById('lockLinks').innerHTML      = '<span class="lock-link" onclick="openImportModal()">📂 Open existing vault file</span>';
+  } else {
+    document.getElementById('lockLinks').innerHTML = '<span class="lock-link" onclick="openImportModal()">📂 Open vault file</span>';
+  }
+};
+
+// ── LOCK ──
+document.getElementById('lockInput').addEventListener('keydown', e=>{ if(e.key==='Enter') handleLockBtn(); });
+
+function handleLockBtn() {
+  if (isFirstTime) { showSetupModal(); return; }
+  unlock();
+}
+
+async function unlock() {
+  const input = document.getElementById('lockInput');
+  const pw    = input.value;
+  if (!pw) { shakeEl(input, 'Enter your password.'); return; }
+  const hash = localStorage.getItem(VAULT_HASH);
+  const salt = localStorage.getItem(VAULT_SALT);
+  try {
+    const attempt = await hashPw(pw, salt);
+    if (attempt !== hash) { shakeEl(input, 'Wrong password. Try again.'); return; }
+  } catch(e) { shakeEl(input, 'Error verifying password.'); return; }
+  document.getElementById('lockErr').textContent = '';
+  document.getElementById('lockIcon').classList.add('open');
+  setTimeout(() => {
+    document.getElementById('s-lock').classList.add('unlocking');
+    setTimeout(openApp, 420);
+  }, 320);
+}
+
+function shakeEl(el, msg) {
+  el.classList.remove('shake','error'); void el.offsetWidth;
+  el.classList.add('shake','error');
+  document.getElementById('lockErr').textContent = msg;
+  el.value = '';
+  setTimeout(() => el.classList.remove('shake','error'), 500);
+}
+
+function openApp() {
+  go('s-list');
+  document.getElementById('s-lock').classList.add('hidden');
+  loadNotes(); renderList();
+}
+
+function lockVault() {
+  if (currentId) saveNote(true);
+  notes = []; currentId = null; activeFilter = 'all';
+  go('s-lock');
+  setTimeout(() => {
+    document.getElementById('s-list').classList.add('hidden');
+    document.getElementById('s-editor').classList.add('hidden');
+    document.getElementById('s-lock').classList.remove('hidden','unlocking');
+    document.getElementById('lockIcon').classList.remove('open');
+    document.getElementById('lockInput').value = '';
+    document.getElementById('lockErr').textContent = '';
+  }, 50);
+}
+
+// ── SCREEN NAV ──
+function go(id) {
+  const all = ['s-lock','s-list','s-editor'];
+  all.forEach(s => {
+    const el = document.getElementById(s);
+    if (s === id) { el.classList.remove('hidden','slide-left'); }
+    else if (!el.classList.contains('hidden')) { el.classList.add(id==='s-editor'?'slide-left':'hidden'); }
+  });
+}
+function goList() {
+  saveNote(true);
+  document.getElementById('s-editor').classList.add('hidden');
+  document.getElementById('s-list').classList.remove('hidden','slide-left');
+  renderList();
+}
+
+// ── STORAGE ──
+function loadNotes() {
+  try { notes = JSON.parse(localStorage.getItem(VAULT_KEY)||'[]'); } catch { notes=[]; }
+}
+function saveNotes() { localStorage.setItem(VAULT_KEY, JSON.stringify(notes)); }
+
+// ── PASSWORD ──
+function showSetupModal() {
+  document.getElementById('pwTitle').textContent = 'Set Your Password';
+  document.getElementById('pwSub').textContent   = 'Choose a strong password. This is the only way to access your vault.';
+  document.getElementById('pwNew').value = ''; document.getElementById('pwConfirm').value = '';
+  document.getElementById('pwErr').textContent = '';
+  openModal('modalPassword');
+}
+function showChangePassword() {
+  document.getElementById('pwTitle').textContent = 'Change Password';
+  document.getElementById('pwSub').textContent   = 'Enter a new password for your vault.';
+  document.getElementById('pwNew').value = ''; document.getElementById('pwConfirm').value = '';
+  document.getElementById('pwErr').textContent = '';
+  openModal('modalPassword');
+}
+async function savePassword() {
+  const pw1=document.getElementById('pwNew').value;
+  const pw2=document.getElementById('pwConfirm').value;
+  const err=document.getElementById('pwErr');
+  if (pw1.length<4) { err.textContent='At least 4 characters required.'; return; }
+  if (pw1!==pw2)    { err.textContent='Passwords do not match.'; return; }
+  err.textContent = 'Setting…';
+  const salt=mkSalt(), hash=await hashPw(pw1,salt);
+  localStorage.setItem(VAULT_HASH,hash); localStorage.setItem(VAULT_SALT,salt);
+  closeModal('modalPassword');
+  if (isFirstTime) {
+    isFirstTime=false;
+    document.getElementById('lockPwWrap').style.display='';
+    document.getElementById('unlockBtn').textContent='Unlock';
+    document.getElementById('lockSub').textContent='Your private notes are protected.';
+    document.getElementById('lockLinks').innerHTML='<span class="lock-link" onclick="openImportModal()">📂 Open vault file</span>';
+    toast('Password set! Now unlock your vault.','success');
+  } else {
+    toast('Password changed.','success');
+  }
+}
+
+// ── NOTES ──
+function newNote() {
+  const note = {id:Date.now().toString(),title:'',body:'',tags:[],pinned:false,created:new Date().toISOString(),edited:new Date().toISOString()};
+  notes.unshift(note); saveNotes(); openNote(note.id);
+}
+
+function openNote(id) {
+  currentId = id;
+  const note = notes.find(n=>n.id===id); if (!note) return;
+  document.getElementById('noteTitle').value = note.title;
+  document.getElementById('noteBody').value  = note.body;
+  document.getElementById('editorTopTitle').textContent = note.title || 'New Note';
+  updatePinDisplay(note.pinned);
+  renderActiveTags(note.tags);
+  document.getElementById('metaCreated').textContent = fmtDate(note.created);
+  document.getElementById('metaEdited').textContent  = fmtDate(note.edited);
+  updateStats(); setAS('saved');
+  go('s-editor');
+}
+
+function saveNote(silent=false) {
+  if (!currentId) return;
+  const note = notes.find(n=>n.id===currentId); if (!note) return;
+  note.title  = document.getElementById('noteTitle').value.trim() || 'Untitled';
+  note.body   = document.getElementById('noteBody').value;
+  note.edited = new Date().toISOString();
+  document.getElementById('editorTopTitle').textContent = note.title;
+  document.getElementById('metaEdited').textContent = fmtDate(note.edited);
+  saveNotes();
+  if (!silent) toast('Saved.','success');
+  setAS('saved');
+}
+
+function onEdit() {
+  updateStats(); setAS('saving');
+  clearTimeout(asTimer);
+  asTimer = setTimeout(()=>saveNote(true), 1800);
+}
+
+function togglePin() {
+  if (!currentId) return;
+  const note=notes.find(n=>n.id===currentId); if (!note) return;
+  note.pinned = !note.pinned;
+  updatePinDisplay(note.pinned);
+  saveNotes(); renderList();
+  toast(note.pinned?'📌 Pinned':'Unpinned');
+}
+
+function updatePinDisplay(pinned) {
+  document.getElementById('pinTopBtn').style.opacity = pinned ? '1' : '0.35';
+  document.getElementById('pinSheetLabel').textContent = pinned ? 'Unpin note' : 'Pin note';
+}
+
+function confirmDelete() { if (currentId) openModal('modalDelete'); }
+function deleteNote() {
+  notes = notes.filter(n=>n.id!==currentId); saveNotes(); currentId=null;
+  closeModal('modalDelete'); goList();
+  toast('Note deleted.','error');
+}
+
+// ── TAGS ──
+function openTagSheet() {
+  const note = notes.find(n=>n.id===currentId); if (!note) return;
+  document.getElementById('tagSheetInput').value = '';
+  renderTagPills(note.tags);
+  openSheet('sheetTags');
+}
+function addTagFromSheet() {
+  const inp = document.getElementById('tagSheetInput');
+  const raw = inp.value.trim();
+  if (!raw) return;
+  const note = notes.find(n=>n.id===currentId); if (!note) return;
+  const tag  = raw.toLowerCase().replace(/\s+/g,'-').slice(0,20);
+  if (!note.tags.includes(tag)) { note.tags.push(tag); saveNotes(); renderActiveTags(note.tags); renderTagsBar(); renderList(); }
+  inp.value = '';
+  renderTagPills(note.tags);
+}
+document.getElementById('tagSheetInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();addTagFromSheet();} });
+
+function renderTagPills(tags) {
+  document.getElementById('tagPillRow').innerHTML = tags.map(t=>
+    `<span class="tag-pill on" onclick="removeTag('${t}')">#${t} ✕</span>`
+  ).join('');
+}
+function removeTag(tag) {
+  const note=notes.find(n=>n.id===currentId); if (!note) return;
+  note.tags = note.tags.filter(t=>t!==tag); saveNotes();
+  renderActiveTags(note.tags); renderTagPills(note.tags); renderTagsBar(); renderList();
+}
+function renderActiveTags(tags) {
+  document.getElementById('activeTags').innerHTML = tags.map(t=>
+    `<span class="atag">#${t}<button onclick="removeTag('${t}')">✕</button></span>`
+  ).join('');
+}
+function filterTag(el) {
+  document.querySelectorAll('.tag-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active'); activeFilter=el.dataset.tag; renderList();
+}
+function renderTagsBar() {
+  const allTags = [...new Set(notes.flatMap(n=>n.tags))];
+  const bar = document.getElementById('tagsBar');
+  bar.innerHTML = `<span class="tag-chip${activeFilter==='all'?' active':''}" data-tag="all" onclick="filterTag(this)">All</span>`;
+  allTags.forEach(t => {
+    const c=document.createElement('span'); c.className='tag-chip'+(activeFilter===t?' active':'');
+    c.dataset.tag=t; c.textContent='#'+t; c.onclick=()=>filterTag(c); bar.appendChild(c);
+  });
+}
+
+// ── LIST ──
+function renderList() {
+  const q = (document.getElementById('searchInput').value||'').toLowerCase();
+  const sorted = [...notes].sort((a,b)=>{
+    if (a.pinned!==b.pinned) return a.pinned?-1:1;
+    return new Date(b.edited)-new Date(a.edited);
+  });
+  const filtered = sorted.filter(n=>{
+    const ms=!q||n.title.toLowerCase().includes(q)||n.body.toLowerCase().includes(q)||n.tags.some(t=>t.includes(q));
+    const mt=activeFilter==='all'||n.tags.includes(activeFilter);
+    return ms&&mt;
+  });
+  const list = document.getElementById('notesList');
+  if (!filtered.length) {
+    list.innerHTML=`<div class="notes-empty"><div class="empty-icon">📭</div><div class="empty-text">No notes yet</div><div class="empty-sub">Tap ＋ to create your first note</div></div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(n=>`
+    <div class="note-item" onclick="openNote('${n.id}')">
+      ${n.pinned?'<span class="note-pin-icon">📌</span>':''}
+      <div class="note-item-body">
+        <div class="note-title">${esc(n.title||'Untitled')}</div>
+        <div class="note-preview">${esc(n.body.slice(0,90))||'No content'}</div>
+        <div class="note-foot">
+          <span class="note-date">${fmtShort(n.edited)}</span>
+          ${n.tags.slice(0,3).map(t=>`<span class="note-tag-sm">#${t}</span>`).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+  // Note count in topbar subtitle
+  renderTagsBar();
+}
+
+// ── EXPORT ──
+function showExportModal(single=false) {
+  document.getElementById('exportPw').value=''; document.getElementById('exportPwC').value='';
+  document.getElementById('exportErr').textContent='';
+  document.getElementById('exportSingle').checked=!!single;
+  document.getElementById('exportTitle').textContent = single ? '📤 Share This Note' : '💾 Save Vault File';
+  document.getElementById('exportSub').textContent   = single
+    ? 'Export this note as an encrypted .vault file. Share it safely — password required to open.'
+    : 'Export all notes as an encrypted .vault file. Safe to share or back up.';
+  openModal('modalExport');
+}
+async function doExport() {
+  const pw1=document.getElementById('exportPw').value;
+  const pw2=document.getElementById('exportPwC').value;
+  const err=document.getElementById('exportErr');
+  if (!pw1) { err.textContent='Enter a password for the file.'; return; }
+  if (pw1.length<4) { err.textContent='At least 4 characters required.'; return; }
+  if (pw1!==pw2)    { err.textContent='Passwords do not match.'; return; }
+  err.textContent='Encrypting…';
+  try {
+    const single=document.getElementById('exportSingle').checked;
+    let exportNotes = notes;
+    if (single && currentId) { const n=notes.find(x=>x.id===currentId); exportNotes=n?[n]:notes; }
+    const payload   = JSON.stringify({notes:exportNotes, exported:new Date().toISOString(), count:exportNotes.length});
+    const cipher    = await encryptData(payload, pw1);
+    const blob      = new Blob([cipher],{type:'application/json'});
+    const url       = URL.createObjectURL(blob);
+    const a         = document.createElement('a');
+    const label     = single&&currentId ? (notes.find(n=>n.id===currentId)?.title||'note').replace(/[^a-z0-9]/gi,'_').slice(0,20) : 'vault';
+    a.href=url; a.download=`${label}_${new Date().toISOString().slice(0,10)}.vault`; a.click();
+    URL.revokeObjectURL(url);
+    closeModal('modalExport');
+    toast(`Exported ${exportNotes.length} note${exportNotes.length!==1?'s':''} 🔐`,'success');
+  } catch(e) { err.textContent='Export failed: '+e.message; }
+}
+
+// ── IMPORT ──
+function openImportModal() {
+  document.getElementById('importPw').value=''; document.getElementById('importErr').textContent='';
+  document.getElementById('dropLabel').textContent='Tap to choose a .vault file';
+  document.getElementById('dropZone').classList.remove('ready');
+  document.getElementById('fileInput').value='';
+  importFileData=null;
+  openModal('modalImport');
+}
+function fileSelected(e) {
+  const file=e.target.files[0]; if (!file) return;
+  const r=new FileReader();
+  r.onload=ev=>{ importFileData=ev.target.result; document.getElementById('dropLabel').textContent='✅ '+file.name; document.getElementById('dropZone').classList.add('ready'); document.getElementById('importErr').textContent=''; };
+  r.onerror=()=>document.getElementById('importErr').textContent='Could not read file.';
+  r.readAsText(file);
+}
+async function doImport() {
+  const err=document.getElementById('importErr');
+  const pw=document.getElementById('importPw').value;
+  if (!importFileData) { err.textContent='Please choose a .vault file first.'; return; }
+  if (!pw) { err.textContent='Enter the file password.'; return; }
+  err.textContent='Decrypting…';
+  try {
+    const plain   = await decryptData(importFileData, pw);
+    const data    = JSON.parse(plain);
+    const imported= data.notes||[];
+    if (document.getElementById('importMerge').checked) {
+      const existing=new Set(notes.map(n=>n.id));
+      notes=[...imported.filter(n=>!existing.has(n.id)),...notes];
+    } else {
+      notes=imported;
+    }
+    saveNotes(); renderList();
+    closeModal('modalImport');
+    // If app wasn't open, open it now
+    if (document.getElementById('s-lock').style.display!=='none' || !document.getElementById('s-list').classList.contains('hidden')===false) {
+      document.getElementById('s-lock').classList.add('hidden');
+      document.getElementById('s-list').classList.remove('hidden','slide-left');
+    }
+    toast(`Imported ${imported.length} note${imported.length!==1?'s':''} 🎉`,'success');
+  } catch(e) { err.textContent='Wrong password or corrupted file.'; }
+}
+
+// ── STATS ──
+function updateStats() {
+  const b=document.getElementById('noteBody').value;
+  const w=b.trim()?b.trim().split(/\s+/).length:0;
+  document.getElementById('statWords').textContent=w;
+  document.getElementById('statChars').textContent=b.length;
+}
+function setAS(state) {
+  const d=document.getElementById('asDot'),l=document.getElementById('asLabel');
+  d.className='as-dot';
+  if(state==='saving'){d.classList.add('saving');l.textContent='Saving…';}
+  if(state==='saved'){d.classList.add('saved');l.textContent='Saved';}
+}
+
+// ── SHEETS ──
+function openSheet(id) {
+  closeSheet();
+  activeSheet=id;
+  document.getElementById('sheetOverlay').classList.add('open');
+  document.getElementById(id).classList.add('open');
+}
+function closeSheet() {
+  if (activeSheet) { document.getElementById(activeSheet).classList.remove('open'); activeSheet=null; }
+  document.getElementById('sheetOverlay').classList.remove('open');
+}
+function showListMenu()  { openSheet('sheetListMenu'); }
+function openNoteMenu()  {
+  const note=notes.find(n=>n.id===currentId);
+  if (note) updatePinDisplay(note.pinned);
+  openSheet('sheetNoteMenu');
+}
+
+// ── MODALS ──
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+// ── PW VISIBILITY ──
+function togglePwVis(inputId, btn) {
+  const el=document.getElementById(inputId);
+  if (el.type==='password') { el.type='text'; btn.textContent='🙈'; }
+  else { el.type='password'; btn.textContent='👁'; }
+}
+
+// ── UTILS ──
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtDate(iso){
+  const d=new Date(iso);
+  return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+}
+function fmtShort(iso){
+  const d=new Date(iso),now=new Date(),diff=(now-d)/1000;
+  if(diff<60)return'Just now';
+  if(diff<3600)return Math.floor(diff/60)+'m ago';
+  if(diff<86400)return Math.floor(diff/3600)+'h ago';
+  if(diff<604800)return Math.floor(diff/86400)+'d ago';
+  return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+}
+
+// ── TOAST ──
+let toastT;
+function toast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='show '+(type||'');
+  clearTimeout(toastT); toastT=setTimeout(()=>el.className='',2800);
+}
+
+// ── KEYBOARD (desktop) ──
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveNote();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();if(!document.getElementById('s-lock').classList.contains('hidden')===false)newNote();}
+  if(e.key==='Escape'){closeSheet();document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));}
+});
+
+// ── SWIPE BACK (Android) ──
+let touchStartX=0, touchStartY=0;
+document.addEventListener('touchstart',e=>{ touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY; },{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  const dy=Math.abs(e.changedTouches[0].clientY-touchStartY);
+  if(dx>60&&dy<50&&!document.getElementById('s-editor').classList.contains('hidden')) goList();
+},{passive:true});
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(r => console.log('SW registered'))
+      .catch(e => console.log('SW error', e));
+  });
+}
+</script>
+</body>
+</html>
