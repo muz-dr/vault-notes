@@ -561,9 +561,10 @@ body[data-theme="galaxy"] #s-lock::before{content:'';position:absolute;inset:0;b
         <div class="gd-step-row"><span class="gd-num">2</span><span>Click <strong>+ Create Credentials → OAuth client ID</strong></span></div>
         <div class="gd-step-row"><span class="gd-num">3</span><span>If prompted, click <strong>Configure Consent Screen</strong> → choose <strong>External</strong> → fill in App name (e.g. "Vault Notes") and your email → Save</span></div>
         <div class="gd-step-row"><span class="gd-num">4</span><span>Back in Credentials: Application type → <strong>Web application</strong></span></div>
-        <div class="gd-step-row"><span class="gd-num">5</span><span>Under <strong>Authorised JavaScript origins</strong> add your app URL:<br><code class="gd-code" id="gdOriginHint">https://YOUR-USERNAME.github.io</code></span></div>
-        <div class="gd-step-row"><span class="gd-num">6</span><span>Click <strong>Create</strong> → a popup shows your <strong>Client ID</strong> (ends in <code class="gd-code">.apps.googleusercontent.com</code>) → copy it</span></div>
-        <div class="gd-tip">💡 Add <code class="gd-code">http://localhost</code> as a second origin if you also want to test locally</div>
+        <div class="gd-step-row"><span class="gd-num">5</span><span>Under <strong>Authorised JavaScript origins</strong> add:<br><code class="gd-code" id="gdOriginHint">https://YOUR-USERNAME.github.io</code></span></div>
+        <div class="gd-step-row"><span class="gd-num">6</span><span>Under <strong>Authorised redirect URIs</strong> add the <em>exact same URL</em> including the page path:<br><code class="gd-code" id="gdRedirectHint">https://YOUR-USERNAME.github.io/vault-notes/index.html</code></span></div>
+        <div class="gd-step-row"><span class="gd-num">7</span><span>Click <strong>Create</strong> → copy the <strong>Client ID</strong> (ends in <code class="gd-code">.apps.googleusercontent.com</code>)</span></div>
+        <div class="gd-tip">💡 Both the origin AND the redirect URI must be added. The redirect URI must match your URL exactly — no trailing slash.</div>
       </div>
       <div class="m-actions" style="margin-top:12px;flex-direction:row;gap:8px;">
         <button class="m-btn cancel" onclick="showGdStep(2)" style="flex:1;">← Back</button>
@@ -634,11 +635,15 @@ async function decryptData(json,pw){
 // ── INIT ──
 window.onload=()=>{
   loadTheme();
-  const hash=localStorage.getItem(VH)||localStorage.getItem(VPIN);
-  lockMode=localStorage.getItem(VT+'_auth')||'password';
-  if(!hash){
+  // Check ALL possible auth credentials — password hash, PIN hash, or pattern
+  const savedAuthMode=localStorage.getItem(VT+'_auth')||'password';
+  const hasPassword=!!localStorage.getItem(VH);
+  const hasPin=!!localStorage.getItem(VPIN);
+  const hasPattern=!!localStorage.getItem(VPAT);
+  const isConfigured=hasPassword||hasPin||hasPattern;
+  lockMode=savedAuthMode;
+  if(!isConfigured){
     isFirstTime=true;
-    document.getElementById('lockPwWrap')||null;
     document.getElementById('authTabs').style.display='none';
     document.getElementById('authPassword').style.display='none';
     document.getElementById('authPin').style.display='none';
@@ -842,7 +847,17 @@ function doUnlock(){
 }
 function shakeEl(el,msg){el.classList.remove('shake','err');void el.offsetWidth;el.classList.add('shake','err');document.getElementById('lockErr').textContent=msg;if(el.tagName==='INPUT')el.value='';setTimeout(()=>el.classList.remove('shake','err'),500);}
 function shakeErr(msg){document.getElementById('lockErr').textContent=msg;}
-function openApp(){go('s-list');document.getElementById('s-lock').classList.add('hidden');loadNotes();renderList();checkBackupReminder();}
+function openApp(){
+  go('s-list');
+  document.getElementById('s-lock').classList.add('hidden');
+  loadNotes();renderList();checkBackupReminder();
+  // Resume Google Drive action if we returned from OAuth redirect
+  const pending=sessionStorage.getItem('gd_pending_action');
+  if(pending&&gdToken){
+    sessionStorage.removeItem('gd_pending_action');
+    setTimeout(()=>showGdriveModal(pending),600);
+  }
+}
 function lockVault(){if(currentId)saveNote(true);notes=[];currentId=null;activeFilter='all';pinEntry='';patPath=[];go('s-lock');setTimeout(()=>{document.getElementById('s-list').classList.add('hidden');document.getElementById('s-editor').classList.add('hidden');const ls=document.getElementById('s-lock');ls.classList.remove('hidden','unlocking');document.getElementById('lockIcon').classList.remove('open');document.getElementById('lockInput').value='';document.getElementById('lockErr').textContent='';if(!isFirstTime)switchAuthMode(lockMode);},50);}
 
 // ── SETUP / CHANGE PASSWORD ──
@@ -964,6 +979,23 @@ async function doImport(){
 const GD_CLIENT_ID=localStorage.getItem('vault_gd_client_id')||'';
 const GD_SCOPE='https://www.googleapis.com/auth/drive.file';
 let gdToken=null;
+
+// On page load, check if we're returning from a Google OAuth redirect
+(function checkOAuthReturn(){
+  if(window.location.hash&&window.location.hash.includes('access_token')){
+    const params=new URLSearchParams(window.location.hash.slice(1));
+    const token=params.get('access_token');
+    const state=params.get('state'); // 'export' or 'import'
+    if(token){
+      gdToken=token;
+      // Clean the URL so token isn't visible
+      history.replaceState(null,'',window.location.pathname);
+      // Store pending action to resume after app unlocks
+      sessionStorage.setItem('gd_pending_action',state||'export');
+    }
+  }
+})();
+
 function gdriveExport(){showGdriveModal('export');}
 function gdriveImport(){showGdriveModal('import');}
 function showGdriveModal(action){
@@ -975,8 +1007,8 @@ function showGdriveModal(action){
     document.getElementById('gdriveContent').innerHTML='<p style="font-size:13px;color:var(--muted);font-family:var(--font-ui);">Go to <strong style="color:var(--text)">Settings → Connect Google Drive</strong> to set up your personal Google API Client ID.</p>';
     document.getElementById('gdriveActions').innerHTML=`<button class="m-btn confirm" onclick="closeModal('modalGdrive');openSettingsModal()">Open Settings</button><button class="m-btn cancel" onclick="closeModal('modalGdrive')">Cancel</button>`;
   } else if(!gdToken){
-    document.getElementById('gdriveSub').textContent='Sign in with Google to access your Drive.';
-    document.getElementById('gdriveContent').innerHTML='';
+    document.getElementById('gdriveSub').textContent='You\'ll be redirected to Google to sign in, then brought straight back.';
+    document.getElementById('gdriveContent').innerHTML=`<div style="background:var(--bg);border-radius:10px;padding:12px;font-size:12.5px;color:var(--muted);line-height:1.6;font-family:var(--font-ui);">🔒 Your notes are <strong style="color:var(--text)">never sent to Google</strong>. Only an encrypted .vault file is uploaded — Google cannot read it.</div>`;
     document.getElementById('gdriveActions').innerHTML=`<button class="m-btn confirm" onclick="gdriveSignIn('${action}')">🔐 Sign in with Google</button><button class="m-btn cancel" onclick="closeModal('modalGdrive')">Cancel</button>`;
   } else {
     proceedGdrive(action);
@@ -984,10 +1016,21 @@ function showGdriveModal(action){
   openModal('modalGdrive');
 }
 function gdriveSignIn(action){
-  const params=new URLSearchParams({client_id:GD_CLIENT_ID,redirect_uri:'postmessage',response_type:'token',scope:GD_SCOPE,prompt:'select_account'});
-  const popup=window.open('https://accounts.google.com/o/oauth2/auth?'+params,'gdauth','width=480,height=560');
-  const handler=e=>{if(e.source!==popup)return;try{const u=new URL(e.data);const tok=new URLSearchParams(u.hash.slice(1)).get('access_token');if(tok){gdToken=tok;window.removeEventListener('message',handler);proceedGdrive(action);}}catch{}};
-  window.addEventListener('message',handler);
+  const clientId=localStorage.getItem('vault_gd_client_id')||'';
+  if(!clientId){toast('No Client ID configured. Go to Settings.','error');return;}
+  // Use current page as redirect_uri — Google sends token back in URL hash
+  const redirectUri=window.location.href.split('#')[0].split('?')[0];
+  const params=new URLSearchParams({
+    client_id:clientId,
+    redirect_uri:redirectUri,
+    response_type:'token',
+    scope:GD_SCOPE,
+    state:action,
+    prompt:'select_account'
+  });
+  // Save app state so we can resume after redirect
+  sessionStorage.setItem('gd_pending_action',action);
+  window.location.href='https://accounts.google.com/o/oauth2/auth?'+params.toString();
 }
 async function proceedGdrive(action){
   if(action==='export'){
@@ -1099,13 +1142,16 @@ function toast(msg,type=''){const el=document.getElementById('toast');el.textCon
 
 // ── GOOGLE DRIVE SETUP WIZARD ──
 function openGdriveSetup(){
-  // Pre-fill if already set
   const existing=localStorage.getItem('vault_gd_client_id')||'';
   const inp=document.getElementById('gdClientIdInput');
   if(inp) inp.value=existing;
-  // Show origin hint
+  // Auto-fill the exact origin and redirect URI from the current page
+  const origin=window.location.origin||'https://your-site.github.io';
+  const redirectUri=window.location.href.split('#')[0].split('?')[0];
   const hint=document.getElementById('gdOriginHint');
-  if(hint) hint.textContent=window.location.origin||'https://your-site.github.io';
+  if(hint) hint.textContent=origin;
+  const rHint=document.getElementById('gdRedirectHint');
+  if(rHint) rHint.textContent=redirectUri;
   document.getElementById('gdSetupErr').textContent='';
   showGdStep(existing?4:1);
   closeModal('modalSettings');
