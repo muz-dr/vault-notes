@@ -258,13 +258,13 @@ body[data-theme="galaxy"] #s-lock::before{content:'';position:absolute;inset:0;b
       <div class="pw-wrap"><input type="password" class="lock-input" id="lockInput" placeholder="Password" autocomplete="current-password"><button class="pw-eye" onclick="toggleVis('lockInput',this)">👁</button></div>
     </div>
     <!-- PIN -->
-    <div id="authPin" style="display:none;width:100%">
+    <div id="authPin" style="width:100%;display:none;">
       <div id="pinDisplay"></div>
       <div class="pin-pad" id="pinPad"></div>
     </div>
-    <!-- Pattern -->
-    <div id="authPattern" style="display:none;width:100%;align-items:center;flex-direction:column;display:none">
-      <canvas id="patternCanvas" width="260" height="260"></canvas>
+    <!-- Pattern: always in DOM, never display:none so canvas renders correctly -->
+    <div id="authPattern" style="width:100%;flex-direction:column;align-items:center;gap:8px;display:none;">
+      <canvas id="patternCanvas" width="264" height="264" style="max-width:100%;touch-action:none;border-radius:12px;display:block;"></canvas>
       <div class="pattern-status" id="patternStatus">Draw your pattern</div>
     </div>
     <div class="lock-err" id="lockErr"></div>
@@ -559,12 +559,12 @@ body[data-theme="galaxy"] #s-lock::before{content:'';position:absolute;inset:0;b
       <div class="gd-step-body">
         <div class="gd-step-row"><span class="gd-num">1</span><span>Go to <strong>APIs & Services → Credentials</strong></span></div>
         <div class="gd-step-row"><span class="gd-num">2</span><span>Click <strong>+ Create Credentials → OAuth client ID</strong></span></div>
-        <div class="gd-step-row"><span class="gd-num">3</span><span>If prompted, click <strong>Configure Consent Screen</strong> → choose <strong>External</strong> → fill in App name (e.g. "Vault Notes") and your email → Save</span></div>
+        <div class="gd-step-row"><span class="gd-num">3</span><span>If prompted, click <strong>Configure Consent Screen</strong> → choose <strong>External</strong> → fill in App name (e.g. "Vault Notes") and your email → Save &amp; Continue through all steps</span></div>
         <div class="gd-step-row"><span class="gd-num">4</span><span>Back in Credentials: Application type → <strong>Web application</strong></span></div>
         <div class="gd-step-row"><span class="gd-num">5</span><span>Under <strong>Authorised JavaScript origins</strong> add:<br><code class="gd-code" id="gdOriginHint">https://YOUR-USERNAME.github.io</code></span></div>
-        <div class="gd-step-row"><span class="gd-num">6</span><span>Under <strong>Authorised redirect URIs</strong> add the <em>exact same URL</em> including the page path:<br><code class="gd-code" id="gdRedirectHint">https://YOUR-USERNAME.github.io/vault-notes/index.html</code></span></div>
-        <div class="gd-step-row"><span class="gd-num">7</span><span>Click <strong>Create</strong> → copy the <strong>Client ID</strong> (ends in <code class="gd-code">.apps.googleusercontent.com</code>)</span></div>
-        <div class="gd-tip">💡 Both the origin AND the redirect URI must be added. The redirect URI must match your URL exactly — no trailing slash.</div>
+        <div class="gd-step-row"><span class="gd-num">6</span><span>Under <strong>Authorised redirect URIs</strong> add the exact page URL:<br><code class="gd-code" id="gdRedirectHint">https://YOUR-USERNAME.github.io/vault-notes/index.html</code></span></div>
+        <div class="gd-step-row"><span class="gd-num">7</span><span>Click <strong>Create</strong> → copy the <strong>Client ID</strong></span></div>
+        <div class="gd-tip">⚠️ <strong>Getting "access_denied"?</strong> Your app is in Testing mode. Go to <strong>APIs &amp; Services → OAuth consent screen → Test users</strong> → click <strong>+ Add Users</strong> → add your own Gmail address. Only listed users can sign in while in Testing mode.</div>
       </div>
       <div class="m-actions" style="margin-top:12px;flex-direction:row;gap:8px;">
         <button class="m-btn cancel" onclick="showGdStep(2)" style="flex:1;">← Back</button>
@@ -688,13 +688,17 @@ function openThemeSheet(){openSheet('sheetTheme');}
 function switchAuthMode(mode){
   lockMode=mode;
   ['password','pin','pattern'].forEach(m=>{
-    document.getElementById('auth'+cap(m)).style.display=m===mode?(m==='pattern'?'flex':'block'):'none';
+    const el=document.getElementById('auth'+cap(m));
+    el.style.display=m===mode?(m==='pattern'?'flex':'block'):'none';
     const tab=document.querySelector('#authTabs .auth-tab[data-mode="'+m+'"]');
     if(tab)tab.classList.toggle('active',m===mode);
   });
   document.getElementById('unlockBtn').style.display=mode==='pattern'?'none':'block';
   if(mode==='pin') renderPinPad('pinPad','pinEntry');
-  if(mode==='pattern') startPatternLock();
+  if(mode==='pattern'){
+    // Use requestAnimationFrame so the canvas is visible and sized before drawing
+    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ startPatternLock(); }); });
+  }
   document.getElementById('lockErr').textContent='';
   pinEntry='';
 }
@@ -767,14 +771,20 @@ function renderSetupPinDisplay(){
 // ── PATTERN LOCK ──
 const PAT_DOTS=9,PAT_COLS=3;
 function initPatternCanvas(){
+  // Setup canvas — only attach events here; drawing happens when shown
   patCanvas=document.getElementById('patternCanvas');
-  patCtx=patCanvas.getContext('2d');
   patSetupCanvas=document.getElementById('setupPatternCanvas');
-  patSetupCtx=patSetupCanvas.getContext('2d');
   setupPatternEvents(patCanvas,false);
   setupPatternEvents(patSetupCanvas,true);
-  drawPatternGrid(patCtx,patCanvas,[],[]);
-  drawPatternGrid(patSetupCtx,patSetupCanvas,[],[]);
+  // Defer drawing until canvases are in visible DOM
+  requestAnimationFrame(()=>{
+    patCtx=patCanvas.getContext('2d');
+    patSetupCtx=patSetupCanvas.getContext('2d');
+    // Only draw lock canvas if pattern mode is active at startup
+    if(lockMode==='pattern'){
+      drawPatternGrid(patCtx,patCanvas,[],[]);
+    }
+  });
 }
 function getDotCenters(canvas){
   const pad=canvas.width*.18,step=(canvas.width-pad*2)/2;
@@ -817,7 +827,14 @@ function setupPatternEvents(canvas,isSetup){
   canvas.addEventListener('touchstart',start,{passive:false});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',end,{passive:false});
   canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',move);canvas.addEventListener('mouseup',end);
 }
-function startPatternLock(){drawPatternGrid(patCtx,patCanvas,[],[]);document.getElementById('patternStatus').textContent='Draw your pattern';}
+function startPatternLock(){
+  // Re-acquire canvas and context in case DOM wasn't ready at init time
+  patCanvas=document.getElementById('patternCanvas');
+  patCtx=patCanvas.getContext('2d');
+  patPath=[];
+  drawPatternGrid(patCtx,patCanvas,[],[]);
+  document.getElementById('patternStatus').textContent='Draw your pattern';
+}
 async function finishLockPattern(){
   if(patPath.length<4){drawPatternGrid(patCtx,patCanvas,[],[]);document.getElementById('patternStatus').textContent='Too short — try again';return;}
   const stored=localStorage.getItem(VPAT); if(!stored){shakeErr('No pattern set.');return;}
@@ -856,6 +873,29 @@ function openApp(){
   if(pending&&gdToken){
     sessionStorage.removeItem('gd_pending_action');
     setTimeout(()=>showGdriveModal(pending),600);
+  }
+  // Show OAuth error if redirect returned an error
+  const oauthErr=sessionStorage.getItem('gd_oauth_error');
+  if(oauthErr){
+    sessionStorage.removeItem('gd_oauth_error');
+    const [errCode,errDesc]=oauthErr.split('|');
+    let msg='Google sign-in failed.';
+    let hint='';
+    if(errCode==='access_denied'){
+      msg='Google sign-in blocked (access_denied).';
+      hint='Your app is in Testing mode. Go to Google Cloud Console → APIs & Services → OAuth consent screen → Test users → Add your Gmail address as a test user.';
+    } else if(errCode==='invalid_request'){
+      msg='Google OAuth config error.';
+      hint='Check that your Authorised JavaScript origins AND Authorised redirect URIs are both correctly set in Google Cloud Console. Open Settings → Connect Google Drive for your exact URLs.';
+    }
+    setTimeout(()=>{
+      document.getElementById('gdriveTitle').textContent='☁️ Google Drive Error';
+      document.getElementById('gdriveSub').textContent=msg;
+      document.getElementById('gdriveContent').innerHTML=`<div style="background:rgba(224,92,92,.1);border:1px solid var(--red);border-radius:10px;padding:12px;font-size:13px;color:var(--text);line-height:1.6;font-family:var(--font-ui);">${hint?'<strong>How to fix:</strong><br>'+hint:''}</div>`;
+      document.getElementById('gdriveActions').innerHTML=`<button class="m-btn confirm" onclick="closeModal('modalGdrive');openSettingsModal();setTimeout(openGdriveSetup,300)">Open Drive Setup Guide</button><button class="m-btn cancel" onclick="closeModal('modalGdrive')">Close</button>`;
+      document.getElementById('gdriveErr').textContent='';
+      openModal('modalGdrive');
+    },700);
   }
 }
 function lockVault(){if(currentId)saveNote(true);notes=[];currentId=null;activeFilter='all';pinEntry='';patPath=[];go('s-lock');setTimeout(()=>{document.getElementById('s-list').classList.add('hidden');document.getElementById('s-editor').classList.add('hidden');const ls=document.getElementById('s-lock');ls.classList.remove('hidden','unlocking');document.getElementById('lockIcon').classList.remove('open');document.getElementById('lockInput').value='';document.getElementById('lockErr').textContent='';if(!isFirstTime)switchAuthMode(lockMode);},50);}
@@ -982,16 +1022,26 @@ let gdToken=null;
 
 // On page load, check if we're returning from a Google OAuth redirect
 (function checkOAuthReturn(){
+  // Check URL hash for OAuth token (success)
   if(window.location.hash&&window.location.hash.includes('access_token')){
     const params=new URLSearchParams(window.location.hash.slice(1));
     const token=params.get('access_token');
-    const state=params.get('state'); // 'export' or 'import'
+    const state=params.get('state');
     if(token){
       gdToken=token;
-      // Clean the URL so token isn't visible
       history.replaceState(null,'',window.location.pathname);
-      // Store pending action to resume after app unlocks
       sessionStorage.setItem('gd_pending_action',state||'export');
+    }
+  }
+  // Check URL params for OAuth error (e.g. access_denied, invalid_request)
+  if(window.location.search){
+    const params=new URLSearchParams(window.location.search);
+    const err=params.get('error');
+    const desc=params.get('error_description')||'';
+    if(err){
+      history.replaceState(null,'',window.location.pathname);
+      // Store error to show after app unlocks
+      sessionStorage.setItem('gd_oauth_error',err+'|'+desc);
     }
   }
 })();
