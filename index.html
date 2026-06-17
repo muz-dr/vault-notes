@@ -4,238 +4,301 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f1117">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Vault">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
 <title>Vault — Private Notes</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg:#0f1117; --surface:#171b26; --surface2:#1e2333; --border:#2a3045;
-  --amber:#e8a94d; --amber-dim:#c4883a; --amber-glow:rgba(232,169,77,0.18);
-  --text:#e8eaf0; --muted:#7a8499; --dim:#4a5268;
-  --red:#e05c5c; --green:#5ce08a; --blue:#5c9ee0;
-  --r:14px; --rs:10px;
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-top: env(safe-area-inset-top, 0px);
+/* ── THEMES ── */
+body[data-theme="dark"]{
+  --bg:#0f1117;--surface:#171b26;--surface2:#1e2333;--border:#2a3045;
+  --accent:#e8a94d;--accent-dim:#c4883a;--accent-glow:rgba(232,169,77,.18);
+  --text:#e8eaf0;--muted:#7a8499;--dim:#4a5268;
+  --red:#e05c5c;--green:#5ce08a;--blue:#5c9ee0;
+  --font-ui:'Inter',sans-serif;--font-note:'Lora',serif;
+  --lock-bg:#0f1117;--fab-shadow:rgba(232,169,77,.4);
+}
+body[data-theme="paper"]{
+  --bg:#f5f0e8;--surface:#fffdf7;--surface2:#eee9dc;--border:#d4c9b0;
+  --accent:#8b5e3c;--accent-dim:#6b4528;--accent-glow:rgba(139,94,60,.15);
+  --text:#2c1f0e;--muted:#7a6555;--dim:#b0a090;
+  --red:#c0392b;--green:#27ae60;--blue:#2980b9;
+  --font-ui:'Inter',sans-serif;--font-note:'Lora',serif;
+  --lock-bg:#f5f0e8;--fab-shadow:rgba(139,94,60,.3);
+}
+body[data-theme="matrix"]{
+  --bg:#000900;--surface:#001200;--surface2:#001a00;--border:#003300;
+  --accent:#00ff41;--accent-dim:#00cc33;--accent-glow:rgba(0,255,65,.15);
+  --text:#00ff41;--muted:#008f11;--dim:#005500;
+  --red:#ff3333;--green:#00ff41;--blue:#00eeff;
+  --font-ui:'Share Tech Mono',monospace;--font-note:'Share Tech Mono',monospace;
+  --lock-bg:#000900;--fab-shadow:rgba(0,255,65,.4);
+}
+body[data-theme="galaxy"]{
+  --bg:#07031a;--surface:#100830;--surface2:#180f40;--border:#2d1f5e;
+  --accent:#b388ff;--accent-dim:#9c5ffd;--accent-glow:rgba(179,136,255,.18);
+  --text:#e8e0ff;--muted:#9980cc;--dim:#4d3880;
+  --red:#ff6b9d;--green:#69ffb4;--blue:#69d2ff;
+  --font-ui:'Inter',sans-serif;--font-note:'Lora',serif;
+  --lock-bg:#07031a;--fab-shadow:rgba(179,136,255,.4);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html{height:100%;overflow:hidden;}
-body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;-webkit-text-size-adjust:100%;}
-
-/* ── SCREENS ── */
+body{height:100%;font-family:var(--font-ui);background:var(--bg);color:var(--text);overflow:hidden;-webkit-text-size-adjust:100%;transition:background .3s,color .3s;}
+/* SCREENS */
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s;}
 .screen.hidden{transform:translateX(100%);opacity:0;pointer-events:none;}
 .screen.slide-left{transform:translateX(-30%);opacity:0;pointer-events:none;}
-
-/* ── LOCK SCREEN ── */
-#s-lock{align-items:center;justify-content:center;padding:40px 28px;padding-top:calc(var(--safe-top) + 40px);}
+/* LOCK */
+#s-lock{align-items:center;justify-content:center;padding:32px 24px;padding-top:calc(env(safe-area-inset-top,0px) + 32px);overflow-y:auto;}
 #s-lock.unlocking{opacity:0;transform:scale(1.05);}
-.lock-icon{width:76px;height:76px;margin-bottom:24px;position:relative;}
-.lock-body{width:50px;height:36px;border-radius:8px;background:var(--surface2);border:2.5px solid var(--border);position:absolute;bottom:0;left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;transition:border-color .4s,box-shadow .4s;}
-.lock-shackle{width:28px;height:24px;border:2.5px solid var(--border);border-bottom:none;border-radius:14px 14px 0 0;position:absolute;top:0;left:50%;transform:translateX(-50%);transition:border-color .4s,transform .4s;}
-.lock-keyhole{width:10px;height:10px;border-radius:50%;background:var(--dim);transition:background .4s;}
-.lock-icon.open .lock-body{border-color:var(--amber);box-shadow:0 0 28px var(--amber-glow);}
-.lock-icon.open .lock-shackle{border-color:var(--amber);transform:translateX(-50%) translateY(-7px) rotate(-28deg);}
-.lock-icon.open .lock-keyhole{background:var(--amber);}
-.lock-title{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px;}
-.lock-sub{color:var(--muted);font-size:14px;margin-bottom:40px;text-align:center;}
-.lock-form{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;}
-.lock-pw-wrap{position:relative;}
-.lock-input{width:100%;padding:16px 48px 16px 20px;font-size:18px;font-family:inherit;background:var(--surface);border:2px solid var(--border);border-radius:var(--r);color:var(--text);outline:none;text-align:center;letter-spacing:4px;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;}
-.lock-input:focus{border-color:var(--amber);box-shadow:0 0 0 4px var(--amber-glow);}
+.lock-icon{width:72px;height:72px;margin-bottom:20px;position:relative;flex-shrink:0;}
+.lock-body{width:48px;height:34px;border-radius:8px;background:var(--surface2);border:2.5px solid var(--border);position:absolute;bottom:0;left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;transition:border-color .4s,box-shadow .4s;}
+.lock-shackle{width:26px;height:22px;border:2.5px solid var(--border);border-bottom:none;border-radius:13px 13px 0 0;position:absolute;top:0;left:50%;transform:translateX(-50%);transition:border-color .4s,transform .4s;}
+.lock-keyhole{width:9px;height:9px;border-radius:50%;background:var(--dim);transition:background .4s;}
+.lock-icon.open .lock-body{border-color:var(--accent);box-shadow:0 0 24px var(--accent-glow);}
+.lock-icon.open .lock-shackle{border-color:var(--accent);transform:translateX(-50%) translateY(-7px) rotate(-28deg);}
+.lock-icon.open .lock-keyhole{background:var(--accent);}
+.lock-title{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px;}
+.lock-sub{color:var(--muted);font-size:13px;margin-bottom:24px;text-align:center;}
+.lock-form{width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;align-items:center;}
+/* Auth mode tabs */
+.auth-tabs{display:flex;gap:0;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;width:100%;margin-bottom:4px;}
+.auth-tab{flex:1;padding:10px 6px;font-size:13px;font-weight:600;font-family:var(--font-ui);background:transparent;border:none;color:var(--muted);cursor:pointer;transition:background .2s,color .2s;}
+.auth-tab.active{background:var(--accent);color:#000;}
+/* Password */
+.pw-wrap{position:relative;width:100%;}
+.lock-input{width:100%;padding:14px 44px 14px 16px;font-size:16px;font-family:var(--font-ui);background:var(--surface);border:2px solid var(--border);border-radius:12px;color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;}
+.lock-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
 .lock-input.shake{animation:shake .4s ease;}
-.lock-input.error{border-color:var(--red);}
-.pw-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:6px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;}
-@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
-.lock-err{color:var(--red);font-size:13px;text-align:center;min-height:18px;}
-.btn-primary{width:100%;padding:17px;font-size:16px;font-weight:700;font-family:inherit;background:var(--amber);color:#0f1117;border:none;border-radius:var(--r);cursor:pointer;transition:opacity .15s,transform .1s;min-height:56px;}
-.btn-primary:active{opacity:.85;transform:scale(.98);}
-.lock-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;}
-.lock-link{font-size:13px;color:var(--amber);cursor:pointer;padding:8px 4px;min-height:44px;display:flex;align-items:center;}
-
-/* ── TOP BAR ── */
-.topbar{display:flex;align-items:center;gap:8px;padding:12px 16px;padding-top:calc(var(--safe-top) + 12px);background:var(--surface);border-bottom:1px solid var(--border);min-height:60px;flex-shrink:0;}
-.topbar-title{font-size:17px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.topbar-btn{min-width:44px;min-height:44px;border-radius:var(--rs);background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;}
-.topbar-btn:active{background:var(--surface2);color:var(--text);}
-.topbar-btn.amber{color:var(--amber);}
-.topbar-btn.red{color:var(--red);}
-
-/* ── NOTE LIST SCREEN ── */
-#s-list{padding-top:0;}
-.list-search{padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
-.search-inner{position:relative;}
-.search-inner input{width:100%;padding:10px 14px 10px 38px;font-size:14px;font-family:inherit;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--text);outline:none;-webkit-appearance:none;transition:border-color .2s;}
-.search-inner input:focus{border-color:var(--amber);}
-.search-inner input::placeholder{color:var(--dim);}
-.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:14px;pointer-events:none;}
-.tags-bar{padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:6px;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.lock-input.err{border-color:var(--red);}
+.pw-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer;padding:6px;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;}
+/* PIN pad */
+#pinDisplay{display:flex;gap:10px;justify-content:center;margin-bottom:6px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:background .15s,border-color .15s;}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent);}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;}
+.pin-btn{padding:16px 8px;font-size:20px;font-weight:700;font-family:var(--font-ui);background:var(--surface);border:1.5px solid var(--border);border-radius:12px;color:var(--text);cursor:pointer;transition:background .1s;min-height:56px;}
+.pin-btn:active{background:var(--surface2);}
+.pin-btn.del{font-size:16px;color:var(--muted);}
+/* Pattern lock */
+#patternCanvas{touch-action:none;cursor:crosshair;border-radius:12px;}
+.pattern-hint{font-size:12px;color:var(--muted);text-align:center;}
+.pattern-status{font-size:13px;color:var(--accent);text-align:center;min-height:20px;font-weight:600;}
+/* Shared lock */
+.lock-err{color:var(--red);font-size:13px;text-align:center;min-height:18px;width:100%;}
+.btn-primary{width:100%;padding:15px;font-size:15px;font-weight:700;font-family:var(--font-ui);background:var(--accent);color:#000;border:none;border-radius:12px;cursor:pointer;min-height:52px;transition:opacity .15s;}
+.btn-primary:active{opacity:.8;}
+.lock-links{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;width:100%;}
+.lock-link{font-size:13px;color:var(--accent);cursor:pointer;padding:8px 6px;min-height:44px;display:flex;align-items:center;}
+.lock-link-sep{color:var(--dim);padding:8px 0;display:flex;align-items:center;}
+/* TOPBAR */
+.topbar{display:flex;align-items:center;gap:4px;padding:10px 12px;padding-top:calc(env(safe-area-inset-top,0px) + 10px);background:var(--surface);border-bottom:1px solid var(--border);min-height:56px;flex-shrink:0;}
+.topbar-title{font-size:16px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--font-ui);}
+.tbtn{min-width:44px;min-height:44px;border-radius:10px;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;font-family:var(--font-ui);}
+.tbtn:active{background:var(--surface2);color:var(--text);}
+.tbtn.ac{color:var(--accent);}
+.tbtn.rd{color:var(--red);}
+/* LIST */
+.list-search{padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.srch-inner{position:relative;}
+.srch-inner input{width:100%;padding:9px 12px 9px 34px;font-size:14px;font-family:var(--font-ui);background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);outline:none;-webkit-appearance:none;transition:border-color .2s;}
+.srch-inner input:focus{border-color:var(--accent);}
+.srch-inner input::placeholder{color:var(--dim);}
+.srch-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;pointer-events:none;}
+.tags-bar{padding:7px 12px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:5px;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
 .tags-bar::-webkit-scrollbar{display:none;}
-.tag-chip{padding:5px 12px;font-size:12px;border-radius:20px;cursor:pointer;background:var(--bg);border:1px solid var(--border);color:var(--muted);white-space:nowrap;min-height:34px;display:flex;align-items:center;transition:all .15s;flex-shrink:0;}
-.tag-chip.active{background:var(--amber-glow);border-color:var(--amber);color:var(--amber);}
+.tag-chip{padding:5px 11px;font-size:12px;border-radius:20px;cursor:pointer;background:var(--bg);border:1px solid var(--border);color:var(--muted);white-space:nowrap;min-height:32px;display:flex;align-items:center;transition:all .15s;flex-shrink:0;font-family:var(--font-ui);}
+.tag-chip.active{background:var(--accent-glow);border-color:var(--accent);color:var(--accent);}
 .notes-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
 .notes-scroll::-webkit-scrollbar{display:none;}
-.note-item{padding:15px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;display:flex;align-items:flex-start;gap:10px;}
+.note-item{padding:13px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;display:flex;align-items:flex-start;gap:8px;}
 .note-item:active{background:var(--surface2);}
-.note-item-body{flex:1;min-width:0;}
-.note-pin-icon{font-size:12px;color:var(--amber);flex-shrink:0;margin-top:2px;}
-.note-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.note-preview{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px;}
-.note-foot{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
-.note-date{font-size:11.5px;color:var(--dim);}
-.note-tag-sm{font-size:11px;padding:2px 7px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--dim);}
-.notes-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--dim);text-align:center;padding:40px 20px;gap:10px;}
-.empty-icon{font-size:48px;opacity:.3;}
-.empty-text{font-size:15px;color:var(--muted);font-weight:500;}
-.empty-sub{font-size:13px;}
-
-/* FAB */
-.fab{position:fixed;bottom:calc(var(--safe-bottom) + 20px);right:20px;width:60px;height:60px;border-radius:30px;background:var(--amber);color:#0f1117;border:none;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(232,169,77,.4);transition:transform .15s,box-shadow .15s;z-index:10;}
-.fab:active{transform:scale(.93);box-shadow:0 2px 10px rgba(232,169,77,.3);}
-
-/* ── EDITOR SCREEN ── */
-#s-editor{padding-top:0;}
-.editor-meta-bar{padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap;flex-shrink:0;}
-.meta-pill{font-size:11.5px;color:var(--dim);display:flex;align-items:center;gap:3px;}
+.note-ib{flex:1;min-width:0;}
+.note-pin-ic{font-size:11px;color:var(--accent);flex-shrink:0;margin-top:3px;}
+.note-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--font-ui);}
+.note-preview{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;font-family:var(--font-ui);}
+.note-foot{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.note-date{font-size:11px;color:var(--dim);font-family:var(--font-ui);}
+.note-tag-sm{font-size:10.5px;padding:1px 6px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--dim);font-family:var(--font-ui);}
+.notes-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--dim);text-align:center;padding:40px 20px;gap:8px;}
+.empty-icon{font-size:44px;opacity:.3;}
+.empty-text{font-size:15px;color:var(--muted);font-weight:600;font-family:var(--font-ui);}
+.empty-sub{font-size:13px;font-family:var(--font-ui);}
+.fab{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);right:18px;width:58px;height:58px;border-radius:29px;background:var(--accent);color:#000;border:none;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px var(--fab-shadow);z-index:10;transition:transform .15s;}
+.fab:active{transform:scale(.92);}
+/* EDITOR */
+.editor-meta-bar{padding:7px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex-shrink:0;}
+.meta-pill{font-size:11px;color:var(--dim);display:flex;align-items:center;gap:2px;font-family:var(--font-ui);}
 .meta-pill strong{color:var(--muted);}
-.active-tags-row{display:flex;gap:5px;flex-wrap:wrap;}
-.atag{font-size:11px;padding:3px 8px;border-radius:20px;background:var(--amber-glow);border:1px solid var(--amber-dim);color:var(--amber);display:flex;align-items:center;gap:3px;cursor:default;}
-.atag button{background:none;border:none;color:var(--amber);cursor:pointer;font-size:11px;padding:0 0 0 2px;line-height:1;min-width:20px;min-height:20px;display:flex;align-items:center;justify-content:center;}
-#noteTitle{width:100%;padding:16px;font-size:20px;font-weight:700;font-family:'Inter',sans-serif;background:var(--bg);border:none;border-bottom:1px solid var(--border);outline:none;color:var(--text);flex-shrink:0;}
+.active-tags-row{display:flex;gap:4px;flex-wrap:wrap;}
+.atag{font-size:11px;padding:2px 7px;border-radius:20px;background:var(--accent-glow);border:1px solid var(--accent-dim);color:var(--accent);display:flex;align-items:center;gap:2px;font-family:var(--font-ui);}
+.atag button{background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;padding:0 0 0 2px;line-height:1;min-width:18px;min-height:18px;display:flex;align-items:center;justify-content:center;}
+#noteTitle{width:100%;padding:14px;font-size:19px;font-weight:700;font-family:var(--font-ui);background:var(--bg);border:none;border-bottom:1px solid var(--border);outline:none;color:var(--text);flex-shrink:0;}
 #noteTitle::placeholder{color:var(--dim);}
-#noteBody{flex:1;padding:16px;font-size:16px;line-height:1.85;font-family:'Lora',serif;background:var(--bg);border:none;outline:none;resize:none;color:var(--text);-webkit-overflow-scrolling:touch;}
+#noteBody{flex:1;padding:14px;font-size:16px;line-height:1.85;font-family:var(--font-note);background:var(--bg);border:none;outline:none;resize:none;color:var(--text);-webkit-overflow-scrolling:touch;}
 #noteBody::placeholder{color:var(--dim);font-style:italic;}
-.editor-foot{padding:10px 16px;padding-bottom:calc(var(--safe-bottom) + 10px);background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.foot-stat{font-size:11px;color:var(--dim);}
+.editor-foot{padding:8px 14px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 8px);background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.foot-stat{font-size:11px;color:var(--dim);font-family:var(--font-ui);}
 .foot-stat span{color:var(--muted);}
-.as-row{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim);}
+.as-row{margin-left:auto;display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim);font-family:var(--font-ui);}
 .as-dot{width:6px;height:6px;border-radius:50%;background:var(--dim);}
-.as-dot.saving{background:var(--amber);animation:pulse 1s infinite;}
+.as-dot.saving{background:var(--accent);animation:pulse 1s infinite;}
 .as-dot.saved{background:var(--green);}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* ── BOTTOM SHEET ── */
+/* SHEETS */
 .sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;opacity:0;transition:opacity .3s;pointer-events:none;}
 .sheet-overlay.open{opacity:1;pointer-events:all;}
-.bottom-sheet{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;z-index:51;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);padding-bottom:calc(var(--safe-bottom) + 8px);max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.bottom-sheet{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:18px 18px 0 0;z-index:51;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 6px);max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .bottom-sheet.open{transform:translateY(0);}
-.sheet-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:12px auto 16px;}
-.sheet-title{font-size:15px;font-weight:700;padding:0 20px 12px;border-bottom:1px solid var(--border);margin-bottom:4px;}
-.sheet-item{display:flex;align-items:center;gap:14px;padding:16px 20px;font-size:15px;cursor:pointer;transition:background .15s;min-height:56px;}
-.sheet-item:active{background:var(--surface2);}
-.sheet-item-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0;}
-.sheet-item-text{flex:1;}
-.sheet-item-label{font-size:15px;font-weight:500;}
-.sheet-item-sub{font-size:12px;color:var(--muted);margin-top:1px;}
-.sheet-item.red .sheet-item-label{color:var(--red);}
-.sheet-item.amber .sheet-item-label{color:var(--amber);}
-.sheet-sep{height:1px;background:var(--border);margin:4px 0;}
-
-/* ── TAG SHEET ── */
-.tag-sheet-input{margin:12px 20px;padding:12px 16px;font-size:15px;font-family:inherit;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--text);outline:none;width:calc(100% - 40px);-webkit-appearance:none;transition:border-color .2s;}
-.tag-sheet-input:focus{border-color:var(--amber);}
-.tag-sheet-input::placeholder{color:var(--dim);}
-.tag-sheet-hint{font-size:12px;color:var(--dim);padding:0 20px 8px;}
-.tag-list{padding:0 12px 8px;}
-.tag-pill-row{display:flex;flex-wrap:wrap;gap:6px;padding:8px 20px;}
-.tag-pill{padding:7px 14px;border-radius:20px;font-size:13px;border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;min-height:36px;}
-.tag-pill.on{background:var(--amber-glow);border-color:var(--amber);color:var(--amber);}
-
-/* ── MODAL (full-screen on mobile) ── */
+.sh-handle{width:36px;height:4px;border-radius:2px;background:var(--border);margin:10px auto 14px;}
+.sh-title{font-size:14px;font-weight:700;padding:0 18px 10px;border-bottom:1px solid var(--border);margin-bottom:2px;font-family:var(--font-ui);}
+.sh-item{display:flex;align-items:center;gap:12px;padding:14px 18px;font-size:14px;cursor:pointer;transition:background .15s;min-height:52px;}
+.sh-item:active{background:var(--surface2);}
+.sh-ic{font-size:18px;width:26px;text-align:center;flex-shrink:0;}
+.sh-label{font-size:14px;font-weight:500;font-family:var(--font-ui);}
+.sh-sub{font-size:11.5px;color:var(--muted);margin-top:1px;font-family:var(--font-ui);}
+.sh-item.red .sh-label{color:var(--red);}
+.sh-sep{height:1px;background:var(--border);margin:3px 0;}
+/* Themes sheet */
+.theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 18px 16px;}
+.theme-card{border-radius:12px;overflow:hidden;cursor:pointer;border:2px solid var(--border);transition:border-color .2s;position:relative;}
+.theme-card.active{border-color:var(--accent);}
+.theme-card:active{opacity:.8;}
+.tc-preview{height:56px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.tc-label{padding:6px 10px;font-size:12px;font-weight:600;font-family:var(--font-ui);}
+.tc-check{position:absolute;top:6px;right:6px;font-size:13px;display:none;}
+.theme-card.active .tc-check{display:block;}
+/* Tag sheet */
+.tag-sh-input{margin:10px 18px;padding:11px 14px;font-size:15px;font-family:var(--font-ui);background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);outline:none;width:calc(100% - 36px);-webkit-appearance:none;transition:border-color .2s;}
+.tag-sh-input:focus{border-color:var(--accent);}
+.tag-sh-hint{font-size:12px;color:var(--dim);padding:0 18px 6px;font-family:var(--font-ui);}
+.tag-pill-row{display:flex;flex-wrap:wrap;gap:6px;padding:6px 18px 12px;}
+.tag-pill{padding:6px 12px;border-radius:20px;font-size:13px;border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;min-height:34px;font-family:var(--font-ui);}
+.tag-pill.on{background:var(--accent-glow);border-color:var(--accent);color:var(--accent);}
+/* MODALS */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:80;opacity:0;pointer-events:none;transition:opacity .25s;display:flex;align-items:flex-end;}
 .modal-overlay.open{opacity:1;pointer-events:all;}
-.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(var(--safe-bottom) + 20px);width:100%;max-height:90vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+.modal{background:var(--surface);border-radius:18px 18px 0 0;padding:20px 18px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:100%;max-height:88vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
 .modal-overlay.open .modal{transform:translateY(0);}
-.modal-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 18px;}
-.modal-title{font-size:17px;font-weight:700;margin-bottom:6px;}
-.modal-sub{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5;}
-.modal-input{width:100%;padding:14px 16px;font-size:16px;font-family:inherit;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--text);outline:none;margin-bottom:10px;-webkit-appearance:none;transition:border-color .2s;}
-.modal-input:focus{border-color:var(--amber);}
-.modal-err{font-size:13px;color:var(--red);min-height:18px;margin-bottom:6px;}
-.modal-check{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);margin-bottom:14px;cursor:pointer;min-height:44px;}
-.modal-check input{accent-color:var(--amber);width:18px;height:18px;flex-shrink:0;}
-.modal-actions{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
-.modal-btn{width:100%;padding:15px;font-size:15px;font-weight:700;font-family:inherit;border-radius:var(--r);cursor:pointer;border:none;min-height:52px;transition:opacity .15s;}
-.modal-btn:active{opacity:.8;}
-.modal-btn.confirm{background:var(--amber);color:#0f1117;}
-.modal-btn.blue{background:var(--blue);color:#fff;}
-.modal-btn.danger{background:var(--red);color:#fff;}
-.modal-btn.cancel{background:var(--surface2);color:var(--muted);}
-.file-drop{border:2px dashed var(--border);border-radius:var(--rs);padding:24px 16px;text-align:center;color:var(--dim);font-size:14px;cursor:pointer;margin-bottom:12px;transition:border-color .2s,background .2s;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+.m-handle{width:36px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 16px;}
+.m-title{font-size:16px;font-weight:700;margin-bottom:4px;font-family:var(--font-ui);}
+.m-sub{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;font-family:var(--font-ui);}
+.m-input{width:100%;padding:13px 14px;font-size:15px;font-family:var(--font-ui);background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);outline:none;margin-bottom:8px;-webkit-appearance:none;transition:border-color .2s;}
+.m-input:focus{border-color:var(--accent);}
+.m-err{font-size:13px;color:var(--red);min-height:18px;margin-bottom:4px;font-family:var(--font-ui);}
+.m-check{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);margin-bottom:12px;cursor:pointer;min-height:44px;font-family:var(--font-ui);}
+.m-check input{accent-color:var(--accent);width:17px;height:17px;flex-shrink:0;}
+.m-label{font-size:12px;color:var(--muted);margin-bottom:5px;margin-top:2px;display:block;font-family:var(--font-ui);}
+.m-actions{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+.m-btn{width:100%;padding:14px;font-size:14px;font-weight:700;font-family:var(--font-ui);border-radius:12px;cursor:pointer;border:none;min-height:50px;transition:opacity .15s;}
+.m-btn:active{opacity:.8;}
+.m-btn.confirm{background:var(--accent);color:#000;}
+.m-btn.blue{background:var(--blue);color:#fff;}
+.m-btn.danger{background:var(--red);color:#fff;}
+.m-btn.cancel{background:var(--surface2);color:var(--muted);}
+.m-btn.outline{background:transparent;color:var(--accent);border:1.5px solid var(--accent);}
+.file-drop{border:2px dashed var(--border);border-radius:10px;padding:20px 14px;text-align:center;color:var(--dim);font-size:13px;cursor:pointer;margin-bottom:10px;transition:border-color .2s,background .2s;min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:var(--font-ui);}
 .file-drop.ready{border-color:var(--green);background:rgba(92,224,138,.06);color:var(--green);}
-.file-drop input{display:none;}
-
-/* ── TOAST ── */
-#toast{position:fixed;bottom:calc(var(--safe-bottom) + 80px);left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:11px 20px;border-radius:var(--r);font-size:13.5px;opacity:0;transition:opacity .25s,transform .25s;z-index:300;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center;}
+/* Backup banner */
+#backupBanner{position:fixed;top:0;left:0;right:0;z-index:40;background:var(--accent);color:#000;padding:12px 14px;padding-top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;align-items:center;gap:8px;transform:translateY(-100%);transition:transform .35s;font-family:var(--font-ui);}
+#backupBanner.show{transform:translateY(0);}
+.bb-text{flex:1;font-size:13px;font-weight:600;}
+.bb-btn{padding:6px 12px;font-size:12px;font-weight:700;border-radius:8px;border:none;cursor:pointer;background:rgba(0,0,0,.2);color:#000;min-height:36px;font-family:var(--font-ui);}
+/* MATRIX scanlines */
+body[data-theme="matrix"]::before{content:'';position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px);z-index:999;}
+body[data-theme="matrix"] .screen{background:var(--bg);}
+/* GALAXY starfield */
+body[data-theme="galaxy"] #s-lock::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(179,136,255,.05) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(105,210,255,.04) 0%,transparent 50%);pointer-events:none;}
+/* TOAST */
+#toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 76px);left:50%;transform:translateX(-50%) translateY(14px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .25s,transform .25s;z-index:300;pointer-events:none;white-space:nowrap;max-width:88vw;text-align:center;font-family:var(--font-ui);}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 #toast.success{border-color:var(--green);color:var(--green);}
 #toast.error{border-color:var(--red);color:var(--red);}
 #toast.info{border-color:var(--blue);color:var(--blue);}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+
+/* Google Drive wizard */
+.gd-step-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;font-family:var(--font-ui);}
+.gd-step-body{display:flex;flex-direction:column;gap:10px;margin-bottom:4px;}
+.gd-step-row{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--muted);line-height:1.5;font-family:var(--font-ui);}
+.gd-num{min-width:22px;height:22px;border-radius:50%;background:var(--accent);color:#000;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.gd-link{color:var(--accent);text-decoration:none;}
+.gd-link:hover{text-decoration:underline;}
+.gd-code{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:11.5px;color:var(--text);font-family:monospace;}
+.gd-tip{background:var(--accent-glow);border:1px solid var(--accent-dim);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--accent);font-family:var(--font-ui);line-height:1.5;}
 </style>
 </head>
-<body>
+<body data-theme="dark">
 
-<!-- ══ LOCK SCREEN ══ -->
+<!-- BACKUP BANNER -->
+<div id="backupBanner">
+  <span>☁️</span>
+  <span class="bb-text">Time for a cloud backup!</span>
+  <button class="bb-btn" onclick="dismissBanner('snooze')">Later</button>
+  <button class="bb-btn" onclick="dismissBanner('backup')">Back Up</button>
+  <button class="bb-btn" onclick="dismissBanner('mute')" style="background:rgba(0,0,0,.1)">✕</button>
+</div>
+
+<!-- LOCK SCREEN -->
 <div class="screen" id="s-lock">
-  <div class="lock-icon" id="lockIcon">
-    <div class="lock-shackle"></div>
-    <div class="lock-body"><div class="lock-keyhole"></div></div>
-  </div>
-  <div class="lock-title">Vault</div>
+  <div class="lock-icon" id="lockIcon"><div class="lock-shackle"></div><div class="lock-body"><div class="lock-keyhole"></div></div></div>
+  <div class="lock-title" id="lockTitle">Vault</div>
   <div class="lock-sub" id="lockSub">Your private notes are protected.</div>
   <div class="lock-form">
-    <div class="lock-pw-wrap" id="lockPwWrap">
-      <input type="password" class="lock-input" id="lockInput" placeholder="Password" autocomplete="current-password" inputmode="text">
-      <button class="pw-toggle" onclick="togglePwVis('lockInput',this)" type="button">👁</button>
+    <div class="auth-tabs" id="authTabs">
+      <button class="auth-tab active" data-mode="password" onclick="switchAuthMode('password')">Password</button>
+      <button class="auth-tab" data-mode="pin" onclick="switchAuthMode('pin')">PIN</button>
+      <button class="auth-tab" data-mode="pattern" onclick="switchAuthMode('pattern')">Pattern</button>
+    </div>
+    <!-- Password -->
+    <div id="authPassword" style="width:100%">
+      <div class="pw-wrap"><input type="password" class="lock-input" id="lockInput" placeholder="Password" autocomplete="current-password"><button class="pw-eye" onclick="toggleVis('lockInput',this)">👁</button></div>
+    </div>
+    <!-- PIN -->
+    <div id="authPin" style="display:none;width:100%">
+      <div id="pinDisplay"></div>
+      <div class="pin-pad" id="pinPad"></div>
+    </div>
+    <!-- Pattern -->
+    <div id="authPattern" style="display:none;width:100%;align-items:center;flex-direction:column;display:none">
+      <canvas id="patternCanvas" width="260" height="260"></canvas>
+      <div class="pattern-status" id="patternStatus">Draw your pattern</div>
     </div>
     <div class="lock-err" id="lockErr"></div>
     <button class="btn-primary" id="unlockBtn" onclick="handleLockBtn()">Unlock</button>
-    <div class="lock-links" id="lockLinks">
-      <span class="lock-link" onclick="showSetupModal()">🔑 Set password</span>
-      <span class="lock-link" onclick="openImportModal()">📂 Open vault file</span>
-    </div>
+    <div class="lock-links" id="lockLinks"></div>
   </div>
 </div>
 
-<!-- ══ NOTE LIST SCREEN ══ -->
+<!-- NOTE LIST -->
 <div class="screen hidden" id="s-list">
   <div class="topbar">
-    <span class="topbar-title">🔐 Vault Notes</span>
-    <button class="topbar-btn" onclick="openImportModal()" title="Open file">📂</button>
-    <button class="topbar-btn" onclick="showListMenu()" title="Menu">⋯</button>
+    <span class="topbar-title">🔐 Vault</span>
+    <button class="tbtn" onclick="openImportModal()" title="Open file">📂</button>
+    <button class="tbtn" onclick="showListMenu()">⋯</button>
   </div>
-  <div class="list-search">
-    <div class="search-inner">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="Search notes…" oninput="renderList()">
-    </div>
-  </div>
-  <div class="tags-bar" id="tagsBar">
-    <span class="tag-chip active" data-tag="all" onclick="filterTag(this)">All</span>
-  </div>
+  <div class="list-search"><div class="srch-inner"><span class="srch-icon">🔍</span><input type="text" id="searchInput" placeholder="Search…" oninput="renderList()"></div></div>
+  <div class="tags-bar" id="tagsBar"><span class="tag-chip active" data-tag="all" onclick="filterTag(this)">All</span></div>
   <div class="notes-scroll" id="notesList"></div>
-  <button class="fab" onclick="newNote()" title="New note">＋</button>
+  <button class="fab" onclick="newNote()">＋</button>
 </div>
 
-<!-- ══ EDITOR SCREEN ══ -->
+<!-- EDITOR -->
 <div class="screen hidden" id="s-editor">
   <div class="topbar">
-    <button class="topbar-btn" onclick="goList()" title="Back">←</button>
-    <span class="topbar-title" id="editorTopTitle">New Note</span>
-    <button class="topbar-btn amber" id="pinTopBtn" onclick="togglePin()" title="Pin">📌</button>
-    <button class="topbar-btn" onclick="openNoteMenu()" title="More">⋯</button>
+    <button class="tbtn" onclick="goList()">←</button>
+    <span class="topbar-title" id="edTopTitle">New Note</span>
+    <button class="tbtn ac" id="pinTopBtn" onclick="togglePin()" style="opacity:.35">📌</button>
+    <button class="tbtn" onclick="openNoteMenu()">⋯</button>
   </div>
-  <div class="editor-meta-bar" id="editorMetaBar">
+  <div class="editor-meta-bar">
     <div class="meta-pill">📅 <strong id="metaCreated">—</strong></div>
     <div class="meta-pill">✏️ <strong id="metaEdited">—</strong></div>
     <div class="active-tags-row" id="activeTags"></div>
-    <button class="topbar-btn" onclick="openTagSheet()" title="Tags" style="font-size:14px;min-width:34px;min-height:34px;">🏷 Tags</button>
+    <button class="tbtn" onclick="openTagSheet()" style="font-size:12px;min-width:auto;padding:4px 8px;border:1px solid var(--border);border-radius:8px;color:var(--muted);">🏷 Tags</button>
   </div>
   <input type="text" id="noteTitle" placeholder="Title…" oninput="onEdit()">
   <textarea id="noteBody" placeholder="Write something… your words are safe here." oninput="onEdit()"></textarea>
@@ -246,144 +309,288 @@ body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(-
   </div>
 </div>
 
-<!-- ══ BOTTOM SHEETS ══ -->
+<!-- SHEETS -->
 <div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
-
-<!-- List menu sheet -->
+<!-- List menu -->
 <div class="bottom-sheet" id="sheetListMenu">
-  <div class="sheet-handle"></div>
-  <div class="sheet-title">Vault Options</div>
-  <div class="sheet-item" onclick="closeSheet();showExportModal(false)">
-    <span class="sheet-item-icon">💾</span>
-    <div class="sheet-item-text"><div class="sheet-item-label">Save vault file</div><div class="sheet-item-sub">Export all notes encrypted</div></div>
-  </div>
-  <div class="sheet-item" onclick="closeSheet();openImportModal()">
-    <span class="sheet-item-icon">📂</span>
-    <div class="sheet-item-text"><div class="sheet-item-label">Open vault file</div><div class="sheet-item-sub">Import encrypted .vault file</div></div>
-  </div>
-  <div class="sheet-sep"></div>
-  <div class="sheet-item" onclick="closeSheet();showChangePassword()">
-    <span class="sheet-item-icon">🔑</span>
-    <div class="sheet-item-text"><div class="sheet-item-label">Change password</div></div>
-  </div>
-  <div class="sheet-item" onclick="closeSheet();lockVault()">
-    <span class="sheet-item-icon">🔒</span>
-    <div class="sheet-item-text"><div class="sheet-item-label">Lock vault</div></div>
-  </div>
+  <div class="sh-handle"></div><div class="sh-title">Vault Options</div>
+  <div class="sh-item" onclick="closeSheet();showExportModal(false)"><span class="sh-ic">💾</span><div><div class="sh-label">Save vault file</div><div class="sh-sub">Encrypted .vault backup</div></div></div>
+  <div class="sh-item" onclick="closeSheet();openImportModal()"><span class="sh-ic">📂</span><div><div class="sh-label">Open vault file</div><div class="sh-sub">Import encrypted .vault file</div></div></div>
+  <div class="sh-item" onclick="closeSheet();gdriveExport()"><span class="sh-ic">☁️</span><div><div class="sh-label">Save to Google Drive</div><div class="sh-sub">Upload encrypted backup</div></div></div>
+  <div class="sh-item" onclick="closeSheet();gdriveImport()"><span class="sh-ic">🔄</span><div><div class="sh-label">Load from Google Drive</div><div class="sh-sub">Restore from Drive backup</div></div></div>
+  <div class="sh-sep"></div>
+  <div class="sh-item" onclick="closeSheet();openThemeSheet()"><span class="sh-ic">🎨</span><div><div class="sh-label">Theme</div><div class="sh-sub" id="currentThemeLabel">Dark</div></div></div>
+  <div class="sh-item" onclick="closeSheet();openSettingsModal()"><span class="sh-ic">⚙️</span><div><div class="sh-label">Settings</div><div class="sh-sub">Backup reminders, auth method</div></div></div>
+  <div class="sh-sep"></div>
+  <div class="sh-item" onclick="closeSheet();showChangePassword()"><span class="sh-ic">🔑</span><div><div class="sh-label">Change unlock method</div></div></div>
+  <div class="sh-item" onclick="closeSheet();lockVault()"><span class="sh-ic">🔒</span><div><div class="sh-label">Lock vault</div></div></div>
 </div>
-
-<!-- Note action sheet -->
+<!-- Note menu -->
 <div class="bottom-sheet" id="sheetNoteMenu">
-  <div class="sheet-handle"></div>
-  <div class="sheet-title">Note Options</div>
-  <div class="sheet-item" onclick="closeSheet();saveNote()">
-    <span class="sheet-item-icon">💾</span>
-    <div class="sheet-item-text"><div class="sheet-item-label">Save note</div></div>
-  </div>
-  <div class="sheet-item" id="pinSheetItem" onclick="closeSheet();togglePin()">
-    <span class="sheet-item-icon">📌</span>
-    <div class="sheet-item-text"><div class="sheet-item-label" id="pinSheetLabel">Pin note</div></div>
-  </div>
-  <div class="sheet-item" onclick="closeSheet();openTagSheet()">
-    <span class="sheet-item-icon">🏷</span>
-    <div class="sheet-item-text"><div class="sheet-item-label">Manage tags</div></div>
-  </div>
-  <div class="sheet-item" onclick="closeSheet();showExportModal(true)">
-    <span class="sheet-item-icon">📤</span>
-    <div class="sheet-item-text"><div class="sheet-item-label">Share this note</div><div class="sheet-item-sub">Export as encrypted file</div></div>
-  </div>
-  <div class="sheet-sep"></div>
-  <div class="sheet-item red" onclick="closeSheet();confirmDelete()">
-    <span class="sheet-item-icon">🗑</span>
-    <div class="sheet-item-text"><div class="sheet-item-label">Delete note</div></div>
-  </div>
+  <div class="sh-handle"></div><div class="sh-title">Note Options</div>
+  <div class="sh-item" onclick="closeSheet();saveNote()"><span class="sh-ic">💾</span><div><div class="sh-label">Save note</div></div></div>
+  <div class="sh-item" id="pinSheetItem" onclick="closeSheet();togglePin()"><span class="sh-ic">📌</span><div><div class="sh-label" id="pinSheetLabel">Pin note</div></div></div>
+  <div class="sh-item" onclick="closeSheet();openTagSheet()"><span class="sh-ic">🏷</span><div><div class="sh-label">Manage tags</div></div></div>
+  <div class="sh-item" onclick="closeSheet();showExportModal(true)"><span class="sh-ic">📤</span><div><div class="sh-label">Share this note</div><div class="sh-sub">Encrypted .vault file</div></div></div>
+  <div class="sh-sep"></div>
+  <div class="sh-item red" onclick="closeSheet();confirmDelete()"><span class="sh-ic">🗑</span><div><div class="sh-label">Delete note</div></div></div>
 </div>
-
 <!-- Tag sheet -->
 <div class="bottom-sheet" id="sheetTags">
-  <div class="sheet-handle"></div>
-  <div class="sheet-title">Manage Tags</div>
-  <input type="text" class="tag-sheet-input" id="tagSheetInput" placeholder="Type a tag and tap Add…">
-  <div class="tag-sheet-hint">Tap Add or press Enter to add. Tap a tag below to remove it.</div>
-  <div style="padding:0 20px 12px;"><button class="btn-primary" style="padding:12px;font-size:14px;" onclick="addTagFromSheet()">Add Tag</button></div>
+  <div class="sh-handle"></div><div class="sh-title">Manage Tags</div>
+  <input type="text" class="tag-sh-input" id="tagShIn" placeholder="Type a tag and tap Add…">
+  <div class="tag-sh-hint">Tap Add or press Enter. Tap a tag to remove it.</div>
+  <div style="padding:0 18px 10px;"><button class="btn-primary" style="padding:11px;font-size:13px;" onclick="addTagFromSheet()">Add Tag</button></div>
   <div class="tag-pill-row" id="tagPillRow"></div>
 </div>
+<!-- Theme sheet -->
+<div class="bottom-sheet" id="sheetTheme">
+  <div class="sh-handle"></div><div class="sh-title">Choose Theme</div>
+  <div class="theme-grid">
+    <div class="theme-card" id="tc-dark" onclick="setTheme('dark')" style="background:#0f1117;">
+      <div class="tc-preview" style="background:linear-gradient(135deg,#171b26,#0f1117)">🔐</div>
+      <div class="tc-label" style="background:#171b26;color:#e8a94d;">Dark</div>
+      <span class="tc-check">✅</span>
+    </div>
+    <div class="theme-card" id="tc-paper" onclick="setTheme('paper')" style="background:#f5f0e8;">
+      <div class="tc-preview" style="background:linear-gradient(135deg,#fffdf7,#f5f0e8)">📜</div>
+      <div class="tc-label" style="background:#fffdf7;color:#8b5e3c;">Paper</div>
+      <span class="tc-check">✅</span>
+    </div>
+    <div class="theme-card" id="tc-matrix" onclick="setTheme('matrix')" style="background:#000900;">
+      <div class="tc-preview" style="background:linear-gradient(135deg,#001200,#000900);font-family:monospace;color:#00ff41;font-size:14px;">01001</div>
+      <div class="tc-label" style="background:#001200;color:#00ff41;font-family:monospace;">Matrix</div>
+      <span class="tc-check">✅</span>
+    </div>
+    <div class="theme-card" id="tc-galaxy" onclick="setTheme('galaxy')" style="background:#07031a;">
+      <div class="tc-preview" style="background:linear-gradient(135deg,#100830,#07031a)">🌌</div>
+      <div class="tc-label" style="background:#100830;color:#b388ff;">Galaxy</div>
+      <span class="tc-check">✅</span>
+    </div>
+  </div>
+</div>
 
-<!-- ══ MODALS ══ -->
-
-<!-- Setup / Change Password -->
+<!-- MODALS -->
+<!-- Password/PIN/Pattern Setup -->
 <div class="modal-overlay" id="modalPassword">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="pwTitle">Set Your Password</div>
-    <div class="modal-sub" id="pwSub">Choose a strong password to protect your vault.</div>
-    <div style="position:relative;">
-      <input type="password" class="modal-input" id="pwNew" placeholder="New password" autocomplete="new-password">
-      <button class="pw-toggle" onclick="togglePwVis('pwNew',this)" style="top:50%;right:14px;transform:translateY(-50%);position:absolute;">👁</button>
+    <div class="m-handle"></div>
+    <div class="m-title" id="pwTitle">Set Your Unlock Method</div>
+    <div class="m-sub" id="pwSub">Choose how you want to unlock your vault.</div>
+    <div class="auth-tabs" style="margin-bottom:14px;" id="setupTabs">
+      <button class="auth-tab active" data-mode="password" onclick="switchSetupMode('password')">Password</button>
+      <button class="auth-tab" data-mode="pin" onclick="switchSetupMode('pin')">PIN</button>
+      <button class="auth-tab" data-mode="pattern" onclick="switchSetupMode('pattern')">Pattern</button>
     </div>
-    <input type="password" class="modal-input" id="pwConfirm" placeholder="Confirm password" autocomplete="new-password">
-    <div class="modal-err" id="pwErr"></div>
-    <div class="modal-actions">
-      <button class="modal-btn confirm" onclick="savePassword()">Set Password</button>
-      <button class="modal-btn cancel" onclick="closeModal('modalPassword')">Cancel</button>
+    <!-- Setup Password -->
+    <div id="setupPassword">
+      <div style="position:relative;"><input type="password" class="m-input" id="pwNew" placeholder="New password" autocomplete="new-password"><button class="pw-eye" onclick="toggleVis('pwNew',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);">👁</button></div>
+      <input type="password" class="m-input" id="pwConfirm" placeholder="Confirm password" autocomplete="new-password">
+    </div>
+    <!-- Setup PIN -->
+    <div id="setupPin" style="display:none;">
+      <div id="setupPinDisplay" style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;"></div>
+      <div class="pin-pad" id="setupPinPad"></div>
+      <div style="height:8px;"></div>
+      <div id="setupPinDisplay2" style="display:flex;gap:10px;justify-content:center;margin-bottom:8px;margin-top:12px;"></div>
+      <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:8px;" id="setupPinHint">Enter a 4–8 digit PIN</div>
+    </div>
+    <!-- Setup Pattern -->
+    <div id="setupPattern" style="display:none;flex-direction:column;align-items:center;gap:8px;">
+      <canvas id="setupPatternCanvas" width="240" height="240"></canvas>
+      <div class="pattern-status" id="setupPatternStatus">Draw a pattern (connect at least 4 dots)</div>
+    </div>
+    <div class="m-err" id="pwErr"></div>
+    <div class="m-actions">
+      <button class="m-btn confirm" onclick="saveUnlockMethod()">Set Unlock Method</button>
+      <button class="m-btn cancel" onclick="closeModal('modalPassword')">Cancel</button>
     </div>
   </div>
 </div>
-
-<!-- Confirm Delete -->
+<!-- Delete -->
 <div class="modal-overlay" id="modalDelete">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Delete this note?</div>
-    <div class="modal-sub">This cannot be undone. The note will be permanently removed from your vault.</div>
-    <div class="modal-actions">
-      <button class="modal-btn danger" onclick="deleteNote()">Delete forever</button>
-      <button class="modal-btn cancel" onclick="closeModal('modalDelete')">Cancel</button>
+    <div class="m-handle"></div>
+    <div class="m-title">Delete this note?</div>
+    <div class="m-sub">This cannot be undone. The note will be permanently removed.</div>
+    <div class="m-actions">
+      <button class="m-btn danger" onclick="deleteNote()">Delete forever</button>
+      <button class="m-btn cancel" onclick="closeModal('modalDelete')">Cancel</button>
     </div>
   </div>
 </div>
-
 <!-- Export -->
 <div class="modal-overlay" id="modalExport">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="exportTitle">💾 Save Vault File</div>
-    <div class="modal-sub" id="exportSub">Export as an encrypted .vault file. Anyone who opens it still needs the password.</div>
-    <div style="position:relative;">
-      <input type="password" class="modal-input" id="exportPw" placeholder="Password for this file">
-      <button class="pw-toggle" onclick="togglePwVis('exportPw',this)" style="top:50%;right:14px;transform:translateY(-50%);position:absolute;">👁</button>
+    <div class="m-handle"></div>
+    <div class="m-title" id="exportTitle">💾 Save Vault File</div>
+    <div class="m-sub" id="exportSub">Exported as an encrypted .vault file. Password required to open it.</div>
+    <div style="position:relative;"><input type="password" class="m-input" id="exportPw" placeholder="Password for this file"><button class="pw-eye" onclick="toggleVis('exportPw',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);">👁</button></div>
+    <input type="password" class="m-input" id="exportPwC" placeholder="Confirm password">
+    <label class="m-check"><input type="checkbox" id="exportSingle"> Export only the current note</label>
+    <div class="m-err" id="exportErr"></div>
+    <div class="m-actions">
+      <button class="m-btn blue" onclick="doExport()">⬇ Download .vault file</button>
+      <button class="m-btn cancel" onclick="closeModal('modalExport')">Cancel</button>
     </div>
-    <input type="password" class="modal-input" id="exportPwC" placeholder="Confirm password">
-    <label class="modal-check"><input type="checkbox" id="exportSingle"> Export only the current note</label>
-    <div class="modal-err" id="exportErr"></div>
-    <div class="modal-actions">
-      <button class="modal-btn blue" onclick="doExport()">⬇ Download .vault file</button>
-      <button class="modal-btn cancel" onclick="closeModal('modalExport')">Cancel</button>
+  </div>
+</div>
+<!-- Import -->
+<div class="modal-overlay" id="modalImport">
+  <div class="modal">
+    <div class="m-handle"></div>
+    <div class="m-title">📂 Open Vault File</div>
+    <div class="m-sub">Select an encrypted .vault file, then enter its password. Notes will be merged with yours — no data will be lost.</div>
+    <div class="file-drop" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" accept=".vault,.json" onchange="fileSelected(event)" style="display:none">
+      <span style="font-size:26px">📁</span>
+      <span id="dropLabel">Tap to choose a .vault file</span>
+    </div>
+    <div style="position:relative;"><input type="password" class="m-input" id="importPw" placeholder="File password"><button class="pw-eye" onclick="toggleVis('importPw',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);">👁</button></div>
+    <details style="margin-bottom:10px;">
+      <summary style="font-size:12px;color:var(--muted);cursor:pointer;padding:6px 0;font-family:var(--font-ui);">Advanced: Replace all notes instead of merging</summary>
+      <div style="padding:10px;background:var(--bg);border-radius:8px;margin-top:6px;">
+        <div style="font-size:12px;color:var(--red);margin-bottom:8px;font-family:var(--font-ui);">⚠️ This will permanently delete all your current notes. Type CONFIRM to proceed.</div>
+        <input type="text" class="m-input" id="replaceConfirm" placeholder="Type CONFIRM to replace all" style="margin-bottom:0;">
+      </div>
+    </details>
+    <div class="m-err" id="importErr"></div>
+    <div class="m-actions">
+      <button class="m-btn confirm" onclick="doImport()">Unlock & Import</button>
+      <button class="m-btn cancel" onclick="closeModal('modalImport')">Cancel</button>
+    </div>
+  </div>
+</div>
+<!-- Google Drive -->
+<div class="modal-overlay" id="modalGdrive">
+  <div class="modal">
+    <div class="m-handle"></div>
+    <div class="m-title" id="gdriveTitle">☁️ Google Drive</div>
+    <div class="m-sub" id="gdriveSub">Connect to Google Drive to save and load encrypted vault backups.</div>
+    <div id="gdriveContent"></div>
+    <div class="m-err" id="gdriveErr"></div>
+    <div class="m-actions" id="gdriveActions"></div>
+  </div>
+</div>
+<!-- Settings -->
+<div class="modal-overlay" id="modalSettings">
+  <div class="modal">
+    <div class="m-handle"></div>
+    <div class="m-title">⚙️ Settings</div>
+
+    <!-- GOOGLE DRIVE SECTION -->
+    <span class="m-label" style="font-size:13px;font-weight:700;color:var(--text);">☁️ Google Drive</span>
+    <div id="gdStatusBadge" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12px;font-family:var(--font-ui);margin-bottom:10px;background:var(--bg);border:1px solid var(--border);color:var(--muted);">⬤ Not connected</div>
+    <button class="m-btn outline" style="margin-bottom:14px;padding:11px;" onclick="openGdriveSetup()">🔧 Set up Google Drive connection</button>
+
+    <!-- BACKUP REMINDER -->
+    <span class="m-label">Backup reminder frequency</span>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
+      <label class="m-check" style="margin-bottom:0;"><input type="radio" name="backupRemind" id="br7" value="7" onchange="saveSetting('backupDays',7)" style="accent-color:var(--accent);"><span style="font-family:var(--font-ui);">Every 7 days</span></label>
+      <label class="m-check" style="margin-bottom:0;"><input type="radio" name="backupRemind" id="br14" value="14" onchange="saveSetting('backupDays',14)" style="accent-color:var(--accent);"><span style="font-family:var(--font-ui);">Every 14 days</span></label>
+      <label class="m-check" style="margin-bottom:0;"><input type="radio" name="backupRemind" id="br30" value="30" onchange="saveSetting('backupDays',30)" style="accent-color:var(--accent);"><span style="font-family:var(--font-ui);">Every 30 days</span></label>
+      <label class="m-check" style="margin-bottom:0;"><input type="radio" name="backupRemind" id="br0" value="0" onchange="saveSetting('backupDays',0)" style="accent-color:var(--accent);"><span style="font-family:var(--font-ui);">Off</span></label>
+    </div>
+
+    <!-- APP INFO -->
+    <span class="m-label">App info</span>
+    <div style="font-size:12px;color:var(--muted);line-height:1.7;font-family:var(--font-ui);">
+      Vault Notes — all data stored locally on your device.<br>
+      Notes: <strong id="settingsNoteCount" style="color:var(--text);">0</strong> &nbsp;|&nbsp;
+      Storage used: <strong id="settingsStorage" style="color:var(--text);">—</strong>
+    </div>
+    <div class="m-actions" style="margin-top:16px;">
+      <button class="m-btn cancel" onclick="closeModal('modalSettings')">Done</button>
     </div>
   </div>
 </div>
 
-<!-- Import -->
-<div class="modal-overlay" id="modalImport">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">📂 Open Vault File</div>
-    <div class="modal-sub">Select an encrypted .vault file, then enter its password.</div>
-    <div class="file-drop" id="dropZone" onclick="document.getElementById('fileInput').click()">
-      <input type="file" id="fileInput" accept=".vault,.json" onchange="fileSelected(event)">
-      <span style="font-size:28px">📁</span>
-      <span id="dropLabel">Tap to choose a .vault file</span>
+<!-- GOOGLE DRIVE SETUP WIZARD -->
+<div class="modal-overlay" id="modalGdriveSetup">
+  <div class="modal" style="max-height:92vh;">
+    <div class="m-handle"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <span style="font-size:24px;">☁️</span>
+      <div class="m-title" style="margin:0;">Connect Your Google Drive</div>
     </div>
-    <div style="position:relative;">
-      <input type="password" class="modal-input" id="importPw" placeholder="File password">
-      <button class="pw-toggle" onclick="togglePwVis('importPw',this)" style="top:50%;right:14px;transform:translateY(-50%);position:absolute;">👁</button>
+    <div class="m-sub">Each person connects their <strong>own</strong> Google account — your Drive, your data, your control. Follow the steps below.</div>
+
+    <!-- STEP TABS -->
+    <div style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;" id="setupStepTabs">
+      <button class="auth-tab active" id="stab1" onclick="showGdStep(1)">1. Project</button>
+      <button class="auth-tab" id="stab2" onclick="showGdStep(2)">2. API</button>
+      <button class="auth-tab" id="stab3" onclick="showGdStep(3)">3. OAuth</button>
+      <button class="auth-tab" id="stab4" onclick="showGdStep(4)">4. Connect</button>
     </div>
-    <label class="modal-check"><input type="checkbox" id="importMerge" checked> Merge with current notes</label>
-    <div class="modal-err" id="importErr"></div>
-    <div class="modal-actions">
-      <button class="modal-btn confirm" onclick="doImport()">Unlock & Import</button>
-      <button class="modal-btn cancel" onclick="closeModal('modalImport')">Cancel</button>
+
+    <!-- STEP 1 -->
+    <div id="gdStep1">
+      <div class="gd-step-title">Step 1 — Create a Google Cloud Project</div>
+      <div class="gd-step-body">
+        <div class="gd-step-row"><span class="gd-num">1</span><span>Open <a href="https://console.cloud.google.com" target="_blank" class="gd-link">console.cloud.google.com</a> in a new tab (sign in with your Google account)</span></div>
+        <div class="gd-step-row"><span class="gd-num">2</span><span>Click the project dropdown at the top → <strong>New Project</strong></span></div>
+        <div class="gd-step-row"><span class="gd-num">3</span><span>Name it anything e.g. <code class="gd-code">my-vault-notes</code> → click <strong>Create</strong></span></div>
+        <div class="gd-step-row"><span class="gd-num">4</span><span>Make sure the new project is selected in the dropdown</span></div>
+      </div>
+      <div class="m-actions" style="margin-top:12px;">
+        <button class="m-btn confirm" onclick="showGdStep(2)">Next →</button>
+      </div>
     </div>
+
+    <!-- STEP 2 -->
+    <div id="gdStep2" style="display:none;">
+      <div class="gd-step-title">Step 2 — Enable the Google Drive API</div>
+      <div class="gd-step-body">
+        <div class="gd-step-row"><span class="gd-num">1</span><span>In the left sidebar click <strong>APIs & Services → Library</strong></span></div>
+        <div class="gd-step-row"><span class="gd-num">2</span><span>Search for <code class="gd-code">Google Drive API</code></span></div>
+        <div class="gd-step-row"><span class="gd-num">3</span><span>Click the result → click the blue <strong>Enable</strong> button</span></div>
+        <div class="gd-step-row"><span class="gd-num">4</span><span>Wait for it to enable (about 10 seconds), then continue</span></div>
+        <div class="gd-tip">💡 It's free — Google Drive API has no cost for personal use</div>
+      </div>
+      <div class="m-actions" style="margin-top:12px;flex-direction:row;gap:8px;">
+        <button class="m-btn cancel" onclick="showGdStep(1)" style="flex:1;">← Back</button>
+        <button class="m-btn confirm" onclick="showGdStep(3)" style="flex:2;">Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div id="gdStep3" style="display:none;">
+      <div class="gd-step-title">Step 3 — Create OAuth 2.0 Credentials</div>
+      <div class="gd-step-body">
+        <div class="gd-step-row"><span class="gd-num">1</span><span>Go to <strong>APIs & Services → Credentials</strong></span></div>
+        <div class="gd-step-row"><span class="gd-num">2</span><span>Click <strong>+ Create Credentials → OAuth client ID</strong></span></div>
+        <div class="gd-step-row"><span class="gd-num">3</span><span>If prompted, click <strong>Configure Consent Screen</strong> → choose <strong>External</strong> → fill in App name (e.g. "Vault Notes") and your email → Save</span></div>
+        <div class="gd-step-row"><span class="gd-num">4</span><span>Back in Credentials: Application type → <strong>Web application</strong></span></div>
+        <div class="gd-step-row"><span class="gd-num">5</span><span>Under <strong>Authorised JavaScript origins</strong> add your app URL:<br><code class="gd-code" id="gdOriginHint">https://YOUR-USERNAME.github.io</code></span></div>
+        <div class="gd-step-row"><span class="gd-num">6</span><span>Click <strong>Create</strong> → a popup shows your <strong>Client ID</strong> (ends in <code class="gd-code">.apps.googleusercontent.com</code>) → copy it</span></div>
+        <div class="gd-tip">💡 Add <code class="gd-code">http://localhost</code> as a second origin if you also want to test locally</div>
+      </div>
+      <div class="m-actions" style="margin-top:12px;flex-direction:row;gap:8px;">
+        <button class="m-btn cancel" onclick="showGdStep(2)" style="flex:1;">← Back</button>
+        <button class="m-btn confirm" onclick="showGdStep(4)" style="flex:2;">Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div id="gdStep4" style="display:none;">
+      <div class="gd-step-title">Step 4 — Paste Your Client ID</div>
+      <div class="gd-step-body">
+        <div class="gd-step-row"><span class="gd-num">1</span><span>Paste the Client ID you copied from Google Cloud below</span></div>
+        <div class="gd-step-row"><span class="gd-num">2</span><span>Tap <strong>Save & Connect</strong> — it will be stored only on this device</span></div>
+        <div class="gd-step-row"><span class="gd-num">3</span><span>Then use <strong>Save to Google Drive</strong> from the menu to back up</span></div>
+      </div>
+      <input type="text" class="m-input" id="gdClientIdInput" placeholder="Paste your Client ID here…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="font-size:13px;letter-spacing:0;">
+      <div style="font-size:11.5px;color:var(--dim);margin-bottom:10px;font-family:var(--font-ui);">Looks like: <code style="color:var(--muted);">123456789-abc123.apps.googleusercontent.com</code></div>
+      <div class="m-err" id="gdSetupErr"></div>
+      <div class="m-actions" style="flex-direction:row;gap:8px;">
+        <button class="m-btn cancel" onclick="showGdStep(3)" style="flex:1;">← Back</button>
+        <button class="m-btn confirm" onclick="saveGdriveClientId()" style="flex:2;">✅ Save & Connect</button>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="m-btn danger" onclick="disconnectGdrive()" style="background:transparent;color:var(--red);border:1px solid var(--red);">Disconnect Google Drive</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -391,490 +598,563 @@ body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(-
 
 <script>
 // ── CONSTANTS ──
-const VAULT_KEY  = 'vault_notes_v1';
-const VAULT_HASH = 'vault_pw_hash';
-const VAULT_SALT = 'vault_pw_salt';
+const VK='vault_notes_v1',VH='vault_pw_hash',VS='vault_pw_salt',VT='vault_theme',VAUTH='vault_auth_mode',VPAT='vault_pattern',VPIN='vault_pin_hash',VSET='vault_settings',VBK='vault_last_backup';
 
 // ── STATE ──
-let notes        = [];
-let currentId    = null;
-let activeFilter = 'all';
-let asTimer      = null;
-let isFirstTime  = false;
-let importFileData = null;
-let activeSheet  = null;
+let notes=[],currentId=null,activeFilter='all',asTimer=null,isFirstTime=false,importFileData=null,activeSheet=null;
+let setupMode='password',lockMode='password';
+// Pattern state
+let patDrawing=false,patDots=[],patPath=[],patCanvas,patCtx,patSetupCanvas,patSetupCtx;
+let patSetupPath=[],patSetupStep=0,patSetupFirst='';
+// PIN state
+let pinEntry='',pinSetup1='',pinSetup2='',pinSetupStep=0,PIN_LEN_MIN=4,PIN_LEN_MAX=8;
 
 // ── CRYPTO ──
-async function deriveKey(pw, salt, usage) {
-  const enc = new TextEncoder();
-  const raw = await crypto.subtle.importKey('raw', enc.encode(pw), {name:'PBKDF2'}, false, ['deriveKey']);
-  return crypto.subtle.deriveKey(
-    {name:'PBKDF2', salt:enc.encode(salt), iterations:200000, hash:'SHA-256'},
-    raw, {name:'AES-GCM', length:256}, false, usage
-  );
+async function deriveKey(pw,salt,usage){
+  const e=new TextEncoder(),raw=await crypto.subtle.importKey('raw',e.encode(pw),{name:'PBKDF2'},false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:e.encode(salt),iterations:200000,hash:'SHA-256'},raw,{name:'AES-GCM',length:256},false,usage);
 }
-async function hashPw(pw, salt) {
-  const enc = new TextEncoder();
-  const raw = await crypto.subtle.importKey('raw', enc.encode(pw), {name:'PBKDF2'}, false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits(
-    {name:'PBKDF2', salt:enc.encode(salt), iterations:200000, hash:'SHA-256'}, raw, 256
-  );
+async function hashPw(pw,salt){
+  const e=new TextEncoder(),raw=await crypto.subtle.importKey('raw',e.encode(pw),{name:'PBKDF2'},false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:e.encode(salt),iterations:200000,hash:'SHA-256'},raw,256);
   return btoa(String.fromCharCode(...new Uint8Array(bits)));
 }
-function mkSalt() { return btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16)))); }
-async function encryptData(plain, pw) {
-  const salt = mkSalt(), iv = crypto.getRandomValues(new Uint8Array(12));
-  const key  = await deriveKey(pw, salt, ['encrypt']);
-  const ct   = await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, new TextEncoder().encode(plain));
-  return JSON.stringify({v:1, salt, iv:btoa(String.fromCharCode(...iv)), ct:btoa(String.fromCharCode(...new Uint8Array(ct)))});
+function mkSalt(){return btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));}
+async function encryptData(plain,pw){
+  const salt=mkSalt(),iv=crypto.getRandomValues(new Uint8Array(12)),key=await deriveKey(pw,salt,['encrypt']);
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(plain));
+  return JSON.stringify({v:1,salt,iv:btoa(String.fromCharCode(...iv)),ct:btoa(String.fromCharCode(...new Uint8Array(ct)))});
 }
-async function decryptData(json, pw) {
-  const o  = JSON.parse(json);
-  const iv = Uint8Array.from(atob(o.iv), c=>c.charCodeAt(0));
-  const ct = Uint8Array.from(atob(o.ct), c=>c.charCodeAt(0));
-  const key= await deriveKey(pw, o.salt, ['decrypt']);
-  return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv}, key, ct));
+async function decryptData(json,pw){
+  const o=JSON.parse(json),iv=Uint8Array.from(atob(o.iv),c=>c.charCodeAt(0)),ct=Uint8Array.from(atob(o.ct),c=>c.charCodeAt(0));
+  const key=await deriveKey(pw,o.salt,['decrypt']);
+  return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct));
 }
 
 // ── INIT ──
-window.onload = () => {
-  const hash = localStorage.getItem(VAULT_HASH);
-  if (!hash) {
-    isFirstTime = true;
-    document.getElementById('lockPwWrap').style.display = 'none';
-    document.getElementById('unlockBtn').textContent    = '→ Get started';
-    document.getElementById('lockSub').textContent      = 'Welcome! Set a password to begin.';
-    document.getElementById('lockLinks').innerHTML      = '<span class="lock-link" onclick="openImportModal()">📂 Open existing vault file</span>';
+window.onload=()=>{
+  loadTheme();
+  const hash=localStorage.getItem(VH)||localStorage.getItem(VPIN);
+  lockMode=localStorage.getItem(VT+'_auth')||'password';
+  if(!hash){
+    isFirstTime=true;
+    document.getElementById('lockPwWrap')||null;
+    document.getElementById('authTabs').style.display='none';
+    document.getElementById('authPassword').style.display='none';
+    document.getElementById('authPin').style.display='none';
+    document.getElementById('authPattern').style.display='none';
+    document.getElementById('unlockBtn').textContent='→ Get started';
+    document.getElementById('lockSub').textContent='Welcome! Set a password to begin.';
+    document.getElementById('lockLinks').innerHTML='<span class="lock-link" onclick="openImportModal()">📂 Open existing vault file</span>';
   } else {
-    document.getElementById('lockLinks').innerHTML = '<span class="lock-link" onclick="openImportModal()">📂 Open vault file</span>';
+    switchAuthMode(lockMode);
+    document.getElementById('lockLinks').innerHTML='<span class="lock-link" onclick="openImportModal()">📂 Open vault file</span>';
   }
+  initPatternCanvas();
 };
 
-// ── LOCK ──
-document.getElementById('lockInput').addEventListener('keydown', e=>{ if(e.key==='Enter') handleLockBtn(); });
+// ── THEME ──
+function loadTheme(){
+  const t=localStorage.getItem(VT)||'dark';
+  document.body.setAttribute('data-theme',t);
+  updateThemeCards(t);
+}
+function setTheme(t){
+  document.body.setAttribute('data-theme',t);
+  localStorage.setItem(VT,t);
+  updateThemeCards(t);
+  const names={dark:'Dark',paper:'Paper',matrix:'Matrix Haxor',galaxy:'Galaxy'};
+  document.getElementById('currentThemeLabel').textContent=names[t]||t;
+  closeSheet();
+  toast('Theme: '+(names[t]||t));
+}
+function updateThemeCards(t){
+  ['dark','paper','matrix','galaxy'].forEach(n=>{
+    const c=document.getElementById('tc-'+n);
+    if(c)c.className='theme-card'+(n===t?' active':'');
+  });
+  const names={dark:'Dark',paper:'Paper',matrix:'Matrix Haxor',galaxy:'Galaxy'};
+  const el=document.getElementById('currentThemeLabel');
+  if(el) el.textContent=names[t]||t;
+}
+function openThemeSheet(){openSheet('sheetTheme');}
 
-function handleLockBtn() {
-  if (isFirstTime) { showSetupModal(); return; }
-  unlock();
+// ── AUTH MODE SWITCHING ──
+function switchAuthMode(mode){
+  lockMode=mode;
+  ['password','pin','pattern'].forEach(m=>{
+    document.getElementById('auth'+cap(m)).style.display=m===mode?(m==='pattern'?'flex':'block'):'none';
+    const tab=document.querySelector('#authTabs .auth-tab[data-mode="'+m+'"]');
+    if(tab)tab.classList.toggle('active',m===mode);
+  });
+  document.getElementById('unlockBtn').style.display=mode==='pattern'?'none':'block';
+  if(mode==='pin') renderPinPad('pinPad','pinEntry');
+  if(mode==='pattern') startPatternLock();
+  document.getElementById('lockErr').textContent='';
+  pinEntry='';
+}
+function switchSetupMode(mode){
+  setupMode=mode;
+  ['password','pin','pattern'].forEach(m=>{
+    document.getElementById('setup'+cap(m)).style.display=m===mode?(m==='pattern'?'flex':'block'):'none';
+    const tab=document.querySelector('#setupTabs .auth-tab[data-mode="'+m+'"]');
+    if(tab)tab.classList.toggle('active',m===mode);
+  });
+  document.getElementById('pwErr').textContent='';
+  pinSetup1='';pinSetup2='';pinSetupStep=0;
+  if(mode==='pin') renderSetupPinPad();
+  if(mode==='pattern'){patSetupStep=0;patSetupFirst='';patSetupPath=[];drawSetupPattern([]);document.getElementById('setupPatternStatus').textContent='Draw your pattern (connect 4+ dots)';}
+}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+// ── PIN ──
+function renderPinPad(padId,stateVar){
+  const pad=document.getElementById(padId);
+  const nums=['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  pad.innerHTML=nums.map((n,i)=>`<button class="pin-btn${n===''?' ':n==='⌫'?' del':''}" onclick="pinTap('${n}','${stateVar}')" ${n===''?'disabled style="opacity:0;pointer-events:none;"':''}>${n}</button>`).join('');
+  renderPinDots('pinDisplay',pinEntry);
+}
+function renderSetupPinPad(){
+  const pad=document.getElementById('setupPinPad');
+  const nums=['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  pad.innerHTML=nums.map((n,i)=>`<button class="pin-btn${n===''?' ':n==='⌫'?' del':''}" onclick="setupPinTap('${n}')" ${n===''?'disabled style="opacity:0;pointer-events:none;"':''}>${n}</button>`).join('');
+  renderSetupPinDisplay();
+}
+function renderPinDots(containerId,val){
+  const c=document.getElementById(containerId); if(!c)return;
+  const maxDots=Math.max(4,val.length);
+  c.innerHTML=Array.from({length:maxDots},(_,i)=>`<div class="pin-dot${i<val.length?' filled':''}"></div>`).join('');
+}
+function pinTap(n,stateVar){
+  if(n==='⌫'){pinEntry=pinEntry.slice(0,-1);}
+  else if(n&&pinEntry.length<PIN_LEN_MAX){pinEntry+=n;}
+  renderPinDots('pinDisplay',pinEntry);
+  if(pinEntry.length>=PIN_LEN_MIN) tryPinUnlock();
+}
+async function tryPinUnlock(){
+  const salt=localStorage.getItem(VS); if(!salt)return;
+  const attempt=await hashPw(pinEntry,salt);
+  if(attempt===localStorage.getItem(VPIN)){
+    doUnlock();
+  } else if(pinEntry.length===PIN_LEN_MAX){
+    pinEntry='';
+    renderPinDots('pinDisplay',pinEntry);
+    shakeErr('Wrong PIN. Try again.');
+  }
+}
+function setupPinTap(n){
+  if(pinSetupStep===0){
+    if(n==='⌫')pinSetup1=pinSetup1.slice(0,-1);
+    else if(n&&pinSetup1.length<PIN_LEN_MAX)pinSetup1+=n;
+    renderPinDots('setupPinDisplay',pinSetup1);
+    if(pinSetup1.length>=PIN_LEN_MIN){document.getElementById('setupPinHint').textContent='Confirm your PIN';pinSetupStep=1;pinSetup2='';}
+  } else {
+    if(n==='⌫')pinSetup2=pinSetup2.slice(0,-1);
+    else if(n&&pinSetup2.length<PIN_LEN_MAX)pinSetup2+=n;
+    renderPinDots('setupPinDisplay2',pinSetup2);
+  }
+}
+function renderSetupPinDisplay(){
+  renderPinDots('setupPinDisplay',pinSetup1);
+  renderPinDots('setupPinDisplay2',pinSetup2);
 }
 
-async function unlock() {
-  const input = document.getElementById('lockInput');
-  const pw    = input.value;
-  if (!pw) { shakeEl(input, 'Enter your password.'); return; }
-  const hash = localStorage.getItem(VAULT_HASH);
-  const salt = localStorage.getItem(VAULT_SALT);
-  try {
-    const attempt = await hashPw(pw, salt);
-    if (attempt !== hash) { shakeEl(input, 'Wrong password. Try again.'); return; }
-  } catch(e) { shakeEl(input, 'Error verifying password.'); return; }
-  document.getElementById('lockErr').textContent = '';
-  document.getElementById('lockIcon').classList.add('open');
-  setTimeout(() => {
-    document.getElementById('s-lock').classList.add('unlocking');
-    setTimeout(openApp, 420);
-  }, 320);
+// ── PATTERN LOCK ──
+const PAT_DOTS=9,PAT_COLS=3;
+function initPatternCanvas(){
+  patCanvas=document.getElementById('patternCanvas');
+  patCtx=patCanvas.getContext('2d');
+  patSetupCanvas=document.getElementById('setupPatternCanvas');
+  patSetupCtx=patSetupCanvas.getContext('2d');
+  setupPatternEvents(patCanvas,false);
+  setupPatternEvents(patSetupCanvas,true);
+  drawPatternGrid(patCtx,patCanvas,[],[]);
+  drawPatternGrid(patSetupCtx,patSetupCanvas,[],[]);
 }
-
-function shakeEl(el, msg) {
-  el.classList.remove('shake','error'); void el.offsetWidth;
-  el.classList.add('shake','error');
-  document.getElementById('lockErr').textContent = msg;
-  el.value = '';
-  setTimeout(() => el.classList.remove('shake','error'), 500);
+function getDotCenters(canvas){
+  const pad=canvas.width*.18,step=(canvas.width-pad*2)/2;
+  const dots=[];
+  for(let r=0;r<3;r++)for(let c=0;c<3;c++)dots.push({x:pad+c*step,y:pad+r*step,i:r*3+c});
+  return dots;
 }
-
-function openApp() {
-  go('s-list');
-  document.getElementById('s-lock').classList.add('hidden');
-  loadNotes(); renderList();
-}
-
-function lockVault() {
-  if (currentId) saveNote(true);
-  notes = []; currentId = null; activeFilter = 'all';
-  go('s-lock');
-  setTimeout(() => {
-    document.getElementById('s-list').classList.add('hidden');
-    document.getElementById('s-editor').classList.add('hidden');
-    document.getElementById('s-lock').classList.remove('hidden','unlocking');
-    document.getElementById('lockIcon').classList.remove('open');
-    document.getElementById('lockInput').value = '';
-    document.getElementById('lockErr').textContent = '';
-  }, 50);
-}
-
-// ── SCREEN NAV ──
-function go(id) {
-  const all = ['s-lock','s-list','s-editor'];
-  all.forEach(s => {
-    const el = document.getElementById(s);
-    if (s === id) { el.classList.remove('hidden','slide-left'); }
-    else if (!el.classList.contains('hidden')) { el.classList.add(id==='s-editor'?'slide-left':'hidden'); }
+function drawPatternGrid(ctx,canvas,path,current){
+  const theme=document.body.getAttribute('data-theme')||'dark';
+  const colors={dark:{bg:'#171b26',dot:'#2a3045',active:'#e8a94d',line:'rgba(232,169,77,.5)'},paper:{bg:'#fffdf7',dot:'#d4c9b0',active:'#8b5e3c',line:'rgba(139,94,60,.4)'},matrix:{bg:'#001200',dot:'#003300',active:'#00ff41',line:'rgba(0,255,65,.4)'},galaxy:{bg:'#100830',dot:'#2d1f5e',active:'#b388ff',line:'rgba(179,136,255,.4)'}};
+  const c=colors[theme]||colors.dark;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle=c.bg; ctx.roundRect(0,0,canvas.width,canvas.height,12); ctx.fill();
+  const dots=getDotCenters(canvas);
+  // lines
+  if(path.length>1){
+    ctx.beginPath(); ctx.strokeStyle=c.line; ctx.lineWidth=3; ctx.lineCap='round';
+    dots.filter(d=>path.includes(d.i)).sort((a,b)=>path.indexOf(a.i)-path.indexOf(b.i)).forEach((d,i)=>{i===0?ctx.moveTo(d.x,d.y):ctx.lineTo(d.x,d.y);});
+    if(current)ctx.lineTo(current.x,current.y);
+    ctx.stroke();
+  }
+  // dots
+  dots.forEach(d=>{
+    const on=path.includes(d.i);
+    ctx.beginPath(); ctx.arc(d.x,d.y,on?12:8,0,Math.PI*2);
+    ctx.fillStyle=on?c.active:c.dot; ctx.fill();
+    if(on){ctx.beginPath();ctx.arc(d.x,d.y,4,0,Math.PI*2);ctx.fillStyle=on?'rgba(0,0,0,.4)':'transparent';ctx.fill();}
   });
 }
-function goList() {
-  saveNote(true);
-  document.getElementById('s-editor').classList.add('hidden');
-  document.getElementById('s-list').classList.remove('hidden','slide-left');
-  renderList();
+function hitDot(canvas,x,y){
+  const dots=getDotCenters(canvas),r=canvas.width*.12;
+  const rect=canvas.getBoundingClientRect(),sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+  const cx=(x-rect.left)*sx,cy=(y-rect.top)*sy;
+  return dots.find(d=>Math.hypot(d.x-cx,d.y-cy)<r);
+}
+function setupPatternEvents(canvas,isSetup){
+  const start=e=>{const touch=e.touches?e.touches[0]:e;const dot=hitDot(canvas,touch.clientX,touch.clientY);if(!dot)return;(isSetup?patSetupPath:[]).splice(0);if(isSetup)patSetupPath=[dot.i];else patPath=[dot.i];patDrawing=true;drawPatternGrid(isSetup?patSetupCtx:patCtx,canvas,isSetup?patSetupPath:patPath,null);e.preventDefault();};
+  const move=e=>{if(!patDrawing)return;const touch=e.touches?e.touches[0]:e;const dot=hitDot(canvas,touch.clientX,touch.clientY);const path=isSetup?patSetupPath:patPath;if(dot&&!path.includes(dot.i)){path.push(dot.i);}const rect=canvas.getBoundingClientRect(),sx=canvas.width/rect.width,sy=canvas.height/rect.height;const cur={x:(touch.clientX-rect.left)*sx,y:(touch.clientY-rect.top)*sy};drawPatternGrid(isSetup?patSetupCtx:patCtx,canvas,path,cur);e.preventDefault();};
+  const end=e=>{if(!patDrawing)return;patDrawing=false;isSetup?finishSetupPattern():finishLockPattern();};
+  canvas.addEventListener('touchstart',start,{passive:false});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',end,{passive:false});
+  canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',move);canvas.addEventListener('mouseup',end);
+}
+function startPatternLock(){drawPatternGrid(patCtx,patCanvas,[],[]);document.getElementById('patternStatus').textContent='Draw your pattern';}
+async function finishLockPattern(){
+  if(patPath.length<4){drawPatternGrid(patCtx,patCanvas,[],[]);document.getElementById('patternStatus').textContent='Too short — try again';return;}
+  const stored=localStorage.getItem(VPAT); if(!stored){shakeErr('No pattern set.');return;}
+  const key=patPath.join('-');
+  if(key===stored){doUnlock();}else{document.getElementById('patternStatus').textContent='Wrong pattern — try again';setTimeout(()=>{patPath=[];drawPatternGrid(patCtx,patCanvas,[],[]);document.getElementById('patternStatus').textContent='Draw your pattern';},800);}
+}
+function finishSetupPattern(){
+  if(patSetupPath.length<4){document.getElementById('setupPatternStatus').textContent='Connect at least 4 dots. Try again.';patSetupPath=[];drawPatternGrid(patSetupCtx,patSetupCanvas,[],[]);return;}
+  if(patSetupStep===0){patSetupFirst=patSetupPath.join('-');patSetupStep=1;patSetupPath=[];drawPatternGrid(patSetupCtx,patSetupCanvas,[],[]);document.getElementById('setupPatternStatus').textContent='Draw the same pattern again to confirm';}
+  else{const key=patSetupPath.join('-');if(key===patSetupFirst){document.getElementById('setupPatternStatus').textContent='✅ Pattern confirmed!';document.getElementById('pwErr').textContent='';}else{patSetupStep=0;patSetupFirst='';patSetupPath=[];drawPatternGrid(patSetupCtx,patSetupCanvas,[],[]);document.getElementById('setupPatternStatus').textContent='Patterns did not match. Draw again.';}}
+}
+
+// ── LOCK / UNLOCK ──
+document.getElementById('lockInput').addEventListener('keydown',e=>{if(e.key==='Enter')handleLockBtn();});
+function handleLockBtn(){if(isFirstTime){showSetupModal();}else if(lockMode==='password')unlockPassword();else if(lockMode==='pin')tryPinUnlock();}
+async function unlockPassword(){
+  const input=document.getElementById('lockInput'),pw=input.value;
+  if(!pw){shakeEl(input,'Enter your password.');return;}
+  const hash=localStorage.getItem(VH),salt=localStorage.getItem(VS);
+  try{const attempt=await hashPw(pw,salt);if(attempt!==hash){shakeEl(input,'Wrong password. Try again.');return;}}catch(e){shakeEl(input,'Error.');return;}
+  doUnlock();
+}
+function doUnlock(){
+  document.getElementById('lockErr').textContent='';
+  document.getElementById('lockIcon').classList.add('open');
+  setTimeout(()=>{document.getElementById('s-lock').classList.add('unlocking');setTimeout(openApp,420);},320);
+}
+function shakeEl(el,msg){el.classList.remove('shake','err');void el.offsetWidth;el.classList.add('shake','err');document.getElementById('lockErr').textContent=msg;if(el.tagName==='INPUT')el.value='';setTimeout(()=>el.classList.remove('shake','err'),500);}
+function shakeErr(msg){document.getElementById('lockErr').textContent=msg;}
+function openApp(){go('s-list');document.getElementById('s-lock').classList.add('hidden');loadNotes();renderList();checkBackupReminder();}
+function lockVault(){if(currentId)saveNote(true);notes=[];currentId=null;activeFilter='all';pinEntry='';patPath=[];go('s-lock');setTimeout(()=>{document.getElementById('s-list').classList.add('hidden');document.getElementById('s-editor').classList.add('hidden');const ls=document.getElementById('s-lock');ls.classList.remove('hidden','unlocking');document.getElementById('lockIcon').classList.remove('open');document.getElementById('lockInput').value='';document.getElementById('lockErr').textContent='';if(!isFirstTime)switchAuthMode(lockMode);},50);}
+
+// ── SETUP / CHANGE PASSWORD ──
+function showSetupModal(){document.getElementById('pwTitle').textContent='Set Unlock Method';document.getElementById('pwSub').textContent='Choose how you want to protect your vault.';document.getElementById('pwNew').value='';document.getElementById('pwConfirm').value='';document.getElementById('pwErr').textContent='';switchSetupMode('password');openModal('modalPassword');}
+function showChangePassword(){document.getElementById('pwTitle').textContent='Change Unlock Method';document.getElementById('pwSub').textContent='Set a new way to unlock your vault.';document.getElementById('pwNew').value='';document.getElementById('pwConfirm').value='';document.getElementById('pwErr').textContent='';switchSetupMode('password');openModal('modalPassword');}
+async function saveUnlockMethod(){
+  const err=document.getElementById('pwErr');
+  if(setupMode==='password'){
+    const pw1=document.getElementById('pwNew').value,pw2=document.getElementById('pwConfirm').value;
+    if(pw1.length<4){err.textContent='At least 4 characters required.';return;}
+    if(pw1!==pw2){err.textContent='Passwords do not match.';return;}
+    err.textContent='Setting…';
+    const salt=mkSalt(),hash=await hashPw(pw1,salt);
+    localStorage.setItem(VH,hash);localStorage.setItem(VS,salt);
+    localStorage.removeItem(VPAT);localStorage.removeItem(VPIN);
+    localStorage.setItem(VT+'_auth','password');
+  } else if(setupMode==='pin'){
+    if(pinSetup1.length<PIN_LEN_MIN){err.textContent='Enter a PIN first.';return;}
+    if(pinSetupStep===0||pinSetup2!==pinSetup1){err.textContent='PIN not confirmed. Enter twice.';return;}
+    err.textContent='Setting…';
+    const salt=mkSalt(),hash=await hashPw(pinSetup1,salt);
+    localStorage.setItem(VPIN,hash);localStorage.setItem(VS,salt);
+    localStorage.removeItem(VH);localStorage.removeItem(VPAT);
+    localStorage.setItem(VT+'_auth','pin');
+  } else if(setupMode==='pattern'){
+    if(patSetupStep!==1||!patSetupFirst){err.textContent='Please draw and confirm your pattern.';return;}
+    if(patSetupPath.join('-')!==patSetupFirst&&patSetupPath.length>0||patSetupStep<1){
+      if(patSetupFirst===''){ err.textContent='Please draw and confirm your pattern.';return;}
+    }
+    localStorage.setItem(VPAT,patSetupFirst);
+    localStorage.removeItem(VH);localStorage.removeItem(VPIN);localStorage.removeItem(VS);
+    localStorage.setItem(VT+'_auth','pattern');
+  }
+  lockMode=setupMode;
+  closeModal('modalPassword');
+  if(isFirstTime){isFirstTime=false;document.getElementById('authTabs').style.display='';document.getElementById('unlockBtn').style.display='';document.getElementById('lockSub').textContent='Your private notes are protected.';document.getElementById('lockLinks').innerHTML='<span class="lock-link" onclick="openImportModal()">📂 Open vault file</span>';switchAuthMode(lockMode);toast('Unlock method set! Now unlock your vault.','success');}
+  else{toast('Unlock method changed.','success');}
 }
 
 // ── STORAGE ──
-function loadNotes() {
-  try { notes = JSON.parse(localStorage.getItem(VAULT_KEY)||'[]'); } catch { notes=[]; }
-}
-function saveNotes() { localStorage.setItem(VAULT_KEY, JSON.stringify(notes)); }
-
-// ── PASSWORD ──
-function showSetupModal() {
-  document.getElementById('pwTitle').textContent = 'Set Your Password';
-  document.getElementById('pwSub').textContent   = 'Choose a strong password. This is the only way to access your vault.';
-  document.getElementById('pwNew').value = ''; document.getElementById('pwConfirm').value = '';
-  document.getElementById('pwErr').textContent = '';
-  openModal('modalPassword');
-}
-function showChangePassword() {
-  document.getElementById('pwTitle').textContent = 'Change Password';
-  document.getElementById('pwSub').textContent   = 'Enter a new password for your vault.';
-  document.getElementById('pwNew').value = ''; document.getElementById('pwConfirm').value = '';
-  document.getElementById('pwErr').textContent = '';
-  openModal('modalPassword');
-}
-async function savePassword() {
-  const pw1=document.getElementById('pwNew').value;
-  const pw2=document.getElementById('pwConfirm').value;
-  const err=document.getElementById('pwErr');
-  if (pw1.length<4) { err.textContent='At least 4 characters required.'; return; }
-  if (pw1!==pw2)    { err.textContent='Passwords do not match.'; return; }
-  err.textContent = 'Setting…';
-  const salt=mkSalt(), hash=await hashPw(pw1,salt);
-  localStorage.setItem(VAULT_HASH,hash); localStorage.setItem(VAULT_SALT,salt);
-  closeModal('modalPassword');
-  if (isFirstTime) {
-    isFirstTime=false;
-    document.getElementById('lockPwWrap').style.display='';
-    document.getElementById('unlockBtn').textContent='Unlock';
-    document.getElementById('lockSub').textContent='Your private notes are protected.';
-    document.getElementById('lockLinks').innerHTML='<span class="lock-link" onclick="openImportModal()">📂 Open vault file</span>';
-    toast('Password set! Now unlock your vault.','success');
-  } else {
-    toast('Password changed.','success');
-  }
-}
+function loadNotes(){try{notes=JSON.parse(localStorage.getItem(VK)||'[]');}catch{notes=[];}}
+function saveNotes(){localStorage.setItem(VK,JSON.stringify(notes));}
 
 // ── NOTES ──
-function newNote() {
-  const note = {id:Date.now().toString(),title:'',body:'',tags:[],pinned:false,created:new Date().toISOString(),edited:new Date().toISOString()};
-  notes.unshift(note); saveNotes(); openNote(note.id);
-}
-
-function openNote(id) {
-  currentId = id;
-  const note = notes.find(n=>n.id===id); if (!note) return;
-  document.getElementById('noteTitle').value = note.title;
-  document.getElementById('noteBody').value  = note.body;
-  document.getElementById('editorTopTitle').textContent = note.title || 'New Note';
-  updatePinDisplay(note.pinned);
-  renderActiveTags(note.tags);
-  document.getElementById('metaCreated').textContent = fmtDate(note.created);
-  document.getElementById('metaEdited').textContent  = fmtDate(note.edited);
-  updateStats(); setAS('saved');
-  go('s-editor');
-}
-
-function saveNote(silent=false) {
-  if (!currentId) return;
-  const note = notes.find(n=>n.id===currentId); if (!note) return;
-  note.title  = document.getElementById('noteTitle').value.trim() || 'Untitled';
-  note.body   = document.getElementById('noteBody').value;
-  note.edited = new Date().toISOString();
-  document.getElementById('editorTopTitle').textContent = note.title;
-  document.getElementById('metaEdited').textContent = fmtDate(note.edited);
-  saveNotes();
-  if (!silent) toast('Saved.','success');
-  setAS('saved');
-}
-
-function onEdit() {
-  updateStats(); setAS('saving');
-  clearTimeout(asTimer);
-  asTimer = setTimeout(()=>saveNote(true), 1800);
-}
-
-function togglePin() {
-  if (!currentId) return;
-  const note=notes.find(n=>n.id===currentId); if (!note) return;
-  note.pinned = !note.pinned;
-  updatePinDisplay(note.pinned);
-  saveNotes(); renderList();
-  toast(note.pinned?'📌 Pinned':'Unpinned');
-}
-
-function updatePinDisplay(pinned) {
-  document.getElementById('pinTopBtn').style.opacity = pinned ? '1' : '0.35';
-  document.getElementById('pinSheetLabel').textContent = pinned ? 'Unpin note' : 'Pin note';
-}
-
-function confirmDelete() { if (currentId) openModal('modalDelete'); }
-function deleteNote() {
-  notes = notes.filter(n=>n.id!==currentId); saveNotes(); currentId=null;
-  closeModal('modalDelete'); goList();
-  toast('Note deleted.','error');
-}
+function newNote(){const note={id:Date.now().toString(),title:'',body:'',tags:[],pinned:false,created:new Date().toISOString(),edited:new Date().toISOString()};notes.unshift(note);saveNotes();openNote(note.id);}
+function openNote(id){currentId=id;const note=notes.find(n=>n.id===id);if(!note)return;document.getElementById('noteTitle').value=note.title;document.getElementById('noteBody').value=note.body;document.getElementById('edTopTitle').textContent=note.title||'New Note';updatePinDisplay(note.pinned);renderActiveTags(note.tags);document.getElementById('metaCreated').textContent=fmtDate(note.created);document.getElementById('metaEdited').textContent=fmtDate(note.edited);updateStats();setAS('saved');go('s-editor');}
+function saveNote(silent=false){if(!currentId)return;const note=notes.find(n=>n.id===currentId);if(!note)return;note.title=document.getElementById('noteTitle').value.trim()||'Untitled';note.body=document.getElementById('noteBody').value;note.edited=new Date().toISOString();document.getElementById('edTopTitle').textContent=note.title;document.getElementById('metaEdited').textContent=fmtDate(note.edited);saveNotes();if(!silent)toast('Saved.','success');setAS('saved');}
+function onEdit(){updateStats();setAS('saving');clearTimeout(asTimer);asTimer=setTimeout(()=>saveNote(true),1800);}
+function togglePin(){if(!currentId)return;const note=notes.find(n=>n.id===currentId);if(!note)return;note.pinned=!note.pinned;updatePinDisplay(note.pinned);saveNotes();renderList();toast(note.pinned?'📌 Pinned':'Unpinned');}
+function updatePinDisplay(p){document.getElementById('pinTopBtn').style.opacity=p?'1':'0.35';document.getElementById('pinSheetLabel').textContent=p?'Unpin note':'Pin note';}
+function confirmDelete(){if(currentId)openModal('modalDelete');}
+function deleteNote(){notes=notes.filter(n=>n.id!==currentId);saveNotes();currentId=null;closeModal('modalDelete');goList();toast('Note deleted.','error');}
 
 // ── TAGS ──
-function openTagSheet() {
-  const note = notes.find(n=>n.id===currentId); if (!note) return;
-  document.getElementById('tagSheetInput').value = '';
-  renderTagPills(note.tags);
-  openSheet('sheetTags');
-}
-function addTagFromSheet() {
-  const inp = document.getElementById('tagSheetInput');
-  const raw = inp.value.trim();
-  if (!raw) return;
-  const note = notes.find(n=>n.id===currentId); if (!note) return;
-  const tag  = raw.toLowerCase().replace(/\s+/g,'-').slice(0,20);
-  if (!note.tags.includes(tag)) { note.tags.push(tag); saveNotes(); renderActiveTags(note.tags); renderTagsBar(); renderList(); }
-  inp.value = '';
-  renderTagPills(note.tags);
-}
-document.getElementById('tagSheetInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();addTagFromSheet();} });
-
-function renderTagPills(tags) {
-  document.getElementById('tagPillRow').innerHTML = tags.map(t=>
-    `<span class="tag-pill on" onclick="removeTag('${t}')">#${t} ✕</span>`
-  ).join('');
-}
-function removeTag(tag) {
-  const note=notes.find(n=>n.id===currentId); if (!note) return;
-  note.tags = note.tags.filter(t=>t!==tag); saveNotes();
-  renderActiveTags(note.tags); renderTagPills(note.tags); renderTagsBar(); renderList();
-}
-function renderActiveTags(tags) {
-  document.getElementById('activeTags').innerHTML = tags.map(t=>
-    `<span class="atag">#${t}<button onclick="removeTag('${t}')">✕</button></span>`
-  ).join('');
-}
-function filterTag(el) {
-  document.querySelectorAll('.tag-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active'); activeFilter=el.dataset.tag; renderList();
-}
-function renderTagsBar() {
-  const allTags = [...new Set(notes.flatMap(n=>n.tags))];
-  const bar = document.getElementById('tagsBar');
-  bar.innerHTML = `<span class="tag-chip${activeFilter==='all'?' active':''}" data-tag="all" onclick="filterTag(this)">All</span>`;
-  allTags.forEach(t => {
-    const c=document.createElement('span'); c.className='tag-chip'+(activeFilter===t?' active':'');
-    c.dataset.tag=t; c.textContent='#'+t; c.onclick=()=>filterTag(c); bar.appendChild(c);
-  });
-}
+function openTagSheet(){const note=notes.find(n=>n.id===currentId);if(!note)return;document.getElementById('tagShIn').value='';renderTagPills(note.tags);openSheet('sheetTags');}
+function addTagFromSheet(){const inp=document.getElementById('tagShIn'),raw=inp.value.trim();if(!raw)return;const note=notes.find(n=>n.id===currentId);if(!note)return;const tag=raw.toLowerCase().replace(/\s+/g,'-').slice(0,20);if(!note.tags.includes(tag)){note.tags.push(tag);saveNotes();renderActiveTags(note.tags);renderTagsBar();renderList();}inp.value='';renderTagPills(note.tags);}
+document.getElementById('tagShIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addTagFromSheet();}});
+function renderTagPills(tags){document.getElementById('tagPillRow').innerHTML=tags.map(t=>`<span class="tag-pill on" onclick="removeTag('${t}')">#${t} ✕</span>`).join('');}
+function removeTag(tag){const note=notes.find(n=>n.id===currentId);if(!note)return;note.tags=note.tags.filter(t=>t!==tag);saveNotes();renderActiveTags(note.tags);renderTagPills(note.tags);renderTagsBar();renderList();}
+function renderActiveTags(tags){document.getElementById('activeTags').innerHTML=tags.map(t=>`<span class="atag">#${t}<button onclick="removeTag('${t}')">✕</button></span>`).join('');}
+function filterTag(el){document.querySelectorAll('.tag-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');activeFilter=el.dataset.tag;renderList();}
+function renderTagsBar(){const all=[...new Set(notes.flatMap(n=>n.tags))];const bar=document.getElementById('tagsBar');bar.innerHTML=`<span class="tag-chip${activeFilter==='all'?' active':''}" data-tag="all" onclick="filterTag(this)">All</span>`;all.forEach(t=>{const c=document.createElement('span');c.className='tag-chip'+(activeFilter===t?' active':'');c.dataset.tag=t;c.textContent='#'+t;c.onclick=()=>filterTag(c);bar.appendChild(c);});}
 
 // ── LIST ──
-function renderList() {
-  const q = (document.getElementById('searchInput').value||'').toLowerCase();
-  const sorted = [...notes].sort((a,b)=>{
-    if (a.pinned!==b.pinned) return a.pinned?-1:1;
-    return new Date(b.edited)-new Date(a.edited);
-  });
-  const filtered = sorted.filter(n=>{
-    const ms=!q||n.title.toLowerCase().includes(q)||n.body.toLowerCase().includes(q)||n.tags.some(t=>t.includes(q));
-    const mt=activeFilter==='all'||n.tags.includes(activeFilter);
-    return ms&&mt;
-  });
-  const list = document.getElementById('notesList');
-  if (!filtered.length) {
-    list.innerHTML=`<div class="notes-empty"><div class="empty-icon">📭</div><div class="empty-text">No notes yet</div><div class="empty-sub">Tap ＋ to create your first note</div></div>`;
-    return;
-  }
-  list.innerHTML = filtered.map(n=>`
-    <div class="note-item" onclick="openNote('${n.id}')">
-      ${n.pinned?'<span class="note-pin-icon">📌</span>':''}
-      <div class="note-item-body">
-        <div class="note-title">${esc(n.title||'Untitled')}</div>
-        <div class="note-preview">${esc(n.body.slice(0,90))||'No content'}</div>
-        <div class="note-foot">
-          <span class="note-date">${fmtShort(n.edited)}</span>
-          ${n.tags.slice(0,3).map(t=>`<span class="note-tag-sm">#${t}</span>`).join('')}
-        </div>
-      </div>
-    </div>`).join('');
-  // Note count in topbar subtitle
+function renderList(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  const sorted=[...notes].sort((a,b)=>{if(a.pinned!==b.pinned)return a.pinned?-1:1;return new Date(b.edited)-new Date(a.edited);});
+  const filtered=sorted.filter(n=>{const ms=!q||n.title.toLowerCase().includes(q)||n.body.toLowerCase().includes(q)||n.tags.some(t=>t.includes(q));const mt=activeFilter==='all'||n.tags.includes(activeFilter);return ms&&mt;});
+  const list=document.getElementById('notesList');
+  if(!filtered.length){list.innerHTML=`<div class="notes-empty"><div class="empty-icon">📭</div><div class="empty-text">No notes yet</div><div class="empty-sub">Tap ＋ to create your first note</div></div>`;return;}
+  list.innerHTML=filtered.map(n=>`<div class="note-item" onclick="openNote('${n.id}')">${n.pinned?'<span class="note-pin-ic">📌</span>':''}<div class="note-ib"><div class="note-title">${esc(n.title||'Untitled')}</div><div class="note-preview">${esc(n.body.slice(0,80))||'No content'}</div><div class="note-foot"><span class="note-date">${fmtShort(n.edited)}</span>${n.tags.slice(0,2).map(t=>`<span class="note-tag-sm">#${t}</span>`).join('')}</div></div></div>`).join('');
   renderTagsBar();
 }
 
 // ── EXPORT ──
-function showExportModal(single=false) {
-  document.getElementById('exportPw').value=''; document.getElementById('exportPwC').value='';
-  document.getElementById('exportErr').textContent='';
-  document.getElementById('exportSingle').checked=!!single;
-  document.getElementById('exportTitle').textContent = single ? '📤 Share This Note' : '💾 Save Vault File';
-  document.getElementById('exportSub').textContent   = single
-    ? 'Export this note as an encrypted .vault file. Share it safely — password required to open.'
-    : 'Export all notes as an encrypted .vault file. Safe to share or back up.';
-  openModal('modalExport');
-}
-async function doExport() {
-  const pw1=document.getElementById('exportPw').value;
-  const pw2=document.getElementById('exportPwC').value;
-  const err=document.getElementById('exportErr');
-  if (!pw1) { err.textContent='Enter a password for the file.'; return; }
-  if (pw1.length<4) { err.textContent='At least 4 characters required.'; return; }
-  if (pw1!==pw2)    { err.textContent='Passwords do not match.'; return; }
+function showExportModal(single=false){document.getElementById('exportPw').value='';document.getElementById('exportPwC').value='';document.getElementById('exportErr').textContent='';document.getElementById('exportSingle').checked=!!single;document.getElementById('exportTitle').textContent=single?'📤 Share This Note':'💾 Save Vault File';document.getElementById('exportSub').textContent=single?'Export this note as an encrypted .vault file.':'Export all notes as an encrypted .vault file.';openModal('modalExport');}
+async function doExport(){
+  const pw1=document.getElementById('exportPw').value,pw2=document.getElementById('exportPwC').value,err=document.getElementById('exportErr');
+  if(!pw1){err.textContent='Enter a file password.';return;}
+  if(pw1.length<4){err.textContent='At least 4 characters.';return;}
+  if(pw1!==pw2){err.textContent='Passwords do not match.';return;}
   err.textContent='Encrypting…';
-  try {
+  try{
     const single=document.getElementById('exportSingle').checked;
-    let exportNotes = notes;
-    if (single && currentId) { const n=notes.find(x=>x.id===currentId); exportNotes=n?[n]:notes; }
-    const payload   = JSON.stringify({notes:exportNotes, exported:new Date().toISOString(), count:exportNotes.length});
-    const cipher    = await encryptData(payload, pw1);
-    const blob      = new Blob([cipher],{type:'application/json'});
-    const url       = URL.createObjectURL(blob);
-    const a         = document.createElement('a');
-    const label     = single&&currentId ? (notes.find(n=>n.id===currentId)?.title||'note').replace(/[^a-z0-9]/gi,'_').slice(0,20) : 'vault';
-    a.href=url; a.download=`${label}_${new Date().toISOString().slice(0,10)}.vault`; a.click();
+    let ex=notes;if(single&&currentId){const n=notes.find(x=>x.id===currentId);ex=n?[n]:notes;}
+    const payload=JSON.stringify({notes:ex,exported:new Date().toISOString(),count:ex.length});
+    const cipher=await encryptData(payload,pw1);
+    const blob=new Blob([cipher],{type:'application/octet-stream'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const label=single&&currentId?(notes.find(n=>n.id===currentId)?.title||'note').replace(/[^a-z0-9]/gi,'_').slice(0,20):'vault';
+    a.href=url;a.download=`${label}_${new Date().toISOString().slice(0,10)}.vault`;a.click();
     URL.revokeObjectURL(url);
-    closeModal('modalExport');
-    toast(`Exported ${exportNotes.length} note${exportNotes.length!==1?'s':''} 🔐`,'success');
-  } catch(e) { err.textContent='Export failed: '+e.message; }
+    localStorage.setItem(VBK,Date.now().toString());
+    closeModal('modalExport');toast(`Exported ${ex.length} note${ex.length!==1?'s':''}  🔐`,'success');
+  }catch(e){err.textContent='Export failed: '+e.message;}
 }
 
 // ── IMPORT ──
-function openImportModal() {
-  document.getElementById('importPw').value=''; document.getElementById('importErr').textContent='';
-  document.getElementById('dropLabel').textContent='Tap to choose a .vault file';
-  document.getElementById('dropZone').classList.remove('ready');
-  document.getElementById('fileInput').value='';
-  importFileData=null;
-  openModal('modalImport');
-}
-function fileSelected(e) {
-  const file=e.target.files[0]; if (!file) return;
-  const r=new FileReader();
-  r.onload=ev=>{ importFileData=ev.target.result; document.getElementById('dropLabel').textContent='✅ '+file.name; document.getElementById('dropZone').classList.add('ready'); document.getElementById('importErr').textContent=''; };
-  r.onerror=()=>document.getElementById('importErr').textContent='Could not read file.';
-  r.readAsText(file);
-}
-async function doImport() {
-  const err=document.getElementById('importErr');
-  const pw=document.getElementById('importPw').value;
-  if (!importFileData) { err.textContent='Please choose a .vault file first.'; return; }
-  if (!pw) { err.textContent='Enter the file password.'; return; }
+function openImportModal(){document.getElementById('importPw').value='';document.getElementById('importErr').textContent='';document.getElementById('dropLabel').textContent='Tap to choose a .vault file';document.getElementById('dropZone').classList.remove('ready');document.getElementById('fileInput').value='';document.getElementById('replaceConfirm').value='';importFileData=null;openModal('modalImport');}
+function fileSelected(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{importFileData=ev.target.result;document.getElementById('dropLabel').textContent='✅ '+file.name;document.getElementById('dropZone').classList.add('ready');document.getElementById('importErr').textContent='';};r.onerror=()=>document.getElementById('importErr').textContent='Could not read file.';r.readAsText(file);}
+async function doImport(){
+  const err=document.getElementById('importErr'),pw=document.getElementById('importPw').value,rc=document.getElementById('replaceConfirm').value.trim().toUpperCase();
+  if(!importFileData){err.textContent='Please choose a .vault file first.';return;}
+  if(!pw){err.textContent='Enter the file password.';return;}
   err.textContent='Decrypting…';
-  try {
-    const plain   = await decryptData(importFileData, pw);
-    const data    = JSON.parse(plain);
-    const imported= data.notes||[];
-    if (document.getElementById('importMerge').checked) {
-      const existing=new Set(notes.map(n=>n.id));
-      notes=[...imported.filter(n=>!existing.has(n.id)),...notes];
-    } else {
-      notes=imported;
-    }
-    saveNotes(); renderList();
-    closeModal('modalImport');
-    // If app wasn't open, open it now
-    if (document.getElementById('s-lock').style.display!=='none' || !document.getElementById('s-list').classList.contains('hidden')===false) {
-      document.getElementById('s-lock').classList.add('hidden');
-      document.getElementById('s-list').classList.remove('hidden','slide-left');
-    }
-    toast(`Imported ${imported.length} note${imported.length!==1?'s':''} 🎉`,'success');
-  } catch(e) { err.textContent='Wrong password or corrupted file.'; }
+  try{
+    const plain=await decryptData(importFileData,pw),data=JSON.parse(plain),imported=data.notes||[];
+    const shouldReplace=rc==='CONFIRM';
+    if(shouldReplace){notes=imported;}
+    else{const existing=new Set(notes.map(n=>n.id));notes=[...imported.filter(n=>!existing.has(n.id)),...notes];}
+    saveNotes();renderList();closeModal('modalImport');
+    if(document.getElementById('s-lock').style.display!=='none'||document.getElementById('s-list').classList.contains('hidden')){document.getElementById('s-lock').classList.add('hidden');document.getElementById('s-list').classList.remove('hidden','slide-left');}
+    toast(`Imported ${imported.length} note${imported.length!==1?'s':''}${shouldReplace?' (replaced)':" (merged)"} 🎉`,'success');
+  }catch(e){err.textContent='Wrong password or corrupted file.';}
 }
 
-// ── STATS ──
-function updateStats() {
-  const b=document.getElementById('noteBody').value;
-  const w=b.trim()?b.trim().split(/\s+/).length:0;
-  document.getElementById('statWords').textContent=w;
-  document.getElementById('statChars').textContent=b.length;
+// ── GOOGLE DRIVE ──
+const GD_CLIENT_ID=localStorage.getItem('vault_gd_client_id')||'';
+const GD_SCOPE='https://www.googleapis.com/auth/drive.file';
+let gdToken=null;
+function gdriveExport(){showGdriveModal('export');}
+function gdriveImport(){showGdriveModal('import');}
+function showGdriveModal(action){
+  document.getElementById('gdriveErr').textContent='';
+  document.getElementById('gdriveTitle').textContent=action==='export'?'☁️ Save to Google Drive':'☁️ Load from Google Drive';
+  const clientId=localStorage.getItem('vault_gd_client_id')||'';
+  if(!clientId){
+    document.getElementById('gdriveSub').textContent='You need to connect your own Google Drive first.';
+    document.getElementById('gdriveContent').innerHTML='<p style="font-size:13px;color:var(--muted);font-family:var(--font-ui);">Go to <strong style="color:var(--text)">Settings → Connect Google Drive</strong> to set up your personal Google API Client ID.</p>';
+    document.getElementById('gdriveActions').innerHTML=`<button class="m-btn confirm" onclick="closeModal('modalGdrive');openSettingsModal()">Open Settings</button><button class="m-btn cancel" onclick="closeModal('modalGdrive')">Cancel</button>`;
+  } else if(!gdToken){
+    document.getElementById('gdriveSub').textContent='Sign in with Google to access your Drive.';
+    document.getElementById('gdriveContent').innerHTML='';
+    document.getElementById('gdriveActions').innerHTML=`<button class="m-btn confirm" onclick="gdriveSignIn('${action}')">🔐 Sign in with Google</button><button class="m-btn cancel" onclick="closeModal('modalGdrive')">Cancel</button>`;
+  } else {
+    proceedGdrive(action);
+  }
+  openModal('modalGdrive');
 }
-function setAS(state) {
-  const d=document.getElementById('asDot'),l=document.getElementById('asLabel');
-  d.className='as-dot';
-  if(state==='saving'){d.classList.add('saving');l.textContent='Saving…';}
-  if(state==='saved'){d.classList.add('saved');l.textContent='Saved';}
+function gdriveSignIn(action){
+  const params=new URLSearchParams({client_id:GD_CLIENT_ID,redirect_uri:'postmessage',response_type:'token',scope:GD_SCOPE,prompt:'select_account'});
+  const popup=window.open('https://accounts.google.com/o/oauth2/auth?'+params,'gdauth','width=480,height=560');
+  const handler=e=>{if(e.source!==popup)return;try{const u=new URL(e.data);const tok=new URLSearchParams(u.hash.slice(1)).get('access_token');if(tok){gdToken=tok;window.removeEventListener('message',handler);proceedGdrive(action);}}catch{}};
+  window.addEventListener('message',handler);
+}
+async function proceedGdrive(action){
+  if(action==='export'){
+    document.getElementById('gdriveSub').textContent='Enter a password for the encrypted backup file.';
+    document.getElementById('gdriveContent').innerHTML=`<input type="password" class="m-input" id="gdpw1" placeholder="Backup password"><input type="password" class="m-input" id="gdpw2" placeholder="Confirm password">`;
+    document.getElementById('gdriveActions').innerHTML=`<button class="m-btn blue" onclick="doGdriveUpload()">☁️ Upload to Drive</button><button class="m-btn cancel" onclick="closeModal('modalGdrive')">Cancel</button>`;
+  } else {
+    document.getElementById('gdriveSub').textContent='Choose a .vault file from your Drive.';
+    document.getElementById('gdriveContent').innerHTML=`<div id="gdriveFileList" style="font-size:13px;color:var(--muted);padding:8px 0;">Loading files…</div><input type="password" class="m-input" id="gdimpw" placeholder="File password" style="margin-top:8px;">`;
+    document.getElementById('gdriveActions').innerHTML=`<button class="m-btn confirm" onclick="doGdriveDownload()">⬇ Import selected</button><button class="m-btn cancel" onclick="closeModal('modalGdrive')">Cancel</button>`;
+    loadGdriveFiles();
+  }
+}
+async function loadGdriveFiles(){
+  const el=document.getElementById('gdriveFileList'); if(!el)return;
+  try{
+    const r=await fetch("https://www.googleapis.com/drive/v3/files?q=name+contains+'.vault'&fields=files(id,name,modifiedTime)&orderBy=modifiedTime+desc",{headers:{Authorization:'Bearer '+gdToken}});
+    const d=await r.json();
+    if(!d.files||!d.files.length){el.innerHTML='<div style="color:var(--dim);">No .vault files found in your Drive.</div>';return;}
+    el.innerHTML=d.files.map(f=>`<label style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;font-family:var(--font-ui);font-size:13px;"><input type="radio" name="gdfile" value="${f.id}" style="accent-color:var(--accent);"><span><strong style="color:var(--text);">${esc(f.name)}</strong><br><span style="color:var(--dim);font-size:11px;">${new Date(f.modifiedTime).toLocaleDateString()}</span></span></label>`).join('');
+  }catch(e){el.innerHTML='<div style="color:var(--red);">Failed to list files.</div>';}
+}
+async function doGdriveUpload(){
+  const pw1=(document.getElementById('gdpw1')||{}).value,pw2=(document.getElementById('gdpw2')||{}).value,err=document.getElementById('gdriveErr');
+  if(!pw1||pw1.length<4){err.textContent='Password too short.';return;}if(pw1!==pw2){err.textContent='Passwords do not match.';return;}
+  err.textContent='Encrypting & uploading…';
+  try{
+    const payload=JSON.stringify({notes,exported:new Date().toISOString(),count:notes.length});
+    const cipher=await encryptData(payload,pw1);
+    const fname='vault_'+new Date().toISOString().slice(0,10)+'.vault';
+    const meta=JSON.stringify({name:fname,mimeType:'application/octet-stream'});
+    const body=new FormData();body.append('metadata',new Blob([meta],{type:'application/json'}));body.append('file',new Blob([cipher],{type:'application/octet-stream'}));
+    const r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:'Bearer '+gdToken},body});
+    if(!r.ok)throw new Error('Upload failed: '+r.status);
+    localStorage.setItem(VBK,Date.now().toString());
+    closeModal('modalGdrive');toast('✅ Saved to Google Drive!','success');
+  }catch(e){err.textContent='Upload failed: '+e.message;}
+}
+async function doGdriveDownload(){
+  const sel=document.querySelector('input[name="gdfile"]:checked'),pw=(document.getElementById('gdimpw')||{}).value,err=document.getElementById('gdriveErr');
+  if(!sel){err.textContent='Select a file first.';return;}if(!pw){err.textContent='Enter the file password.';return;}
+  err.textContent='Downloading & decrypting…';
+  try{
+    const r=await fetch('https://www.googleapis.com/drive/v3/files/'+sel.value+'?alt=media',{headers:{Authorization:'Bearer '+gdToken}});
+    if(!r.ok)throw new Error('Download failed');
+    const cipher=await r.text();
+    const plain=await decryptData(cipher,pw);
+    const data=JSON.parse(plain),imported=data.notes||[];
+    const existing=new Set(notes.map(n=>n.id));
+    notes=[...imported.filter(n=>!existing.has(n.id)),...notes];
+    saveNotes();renderList();closeModal('modalGdrive');toast(`Imported ${imported.length} notes from Drive 🎉`,'success');
+  }catch(e){err.textContent='Wrong password or failed: '+e.message;}
 }
 
-// ── SHEETS ──
-function openSheet(id) {
-  closeSheet();
-  activeSheet=id;
-  document.getElementById('sheetOverlay').classList.add('open');
-  document.getElementById(id).classList.add('open');
+// ── BACKUP REMINDER ──
+function checkBackupReminder(){
+  const settings=JSON.parse(localStorage.getItem(VSET)||'{}');
+  const days=settings.backupDays!=null?settings.backupDays:7;
+  if(days===0)return;
+  const lastBk=parseInt(localStorage.getItem(VBK)||'0');
+  const elapsed=(Date.now()-lastBk)/(1000*60*60*24);
+  if(elapsed>=days||lastBk===0){setTimeout(()=>document.getElementById('backupBanner').classList.add('show'),2000);}
 }
-function closeSheet() {
-  if (activeSheet) { document.getElementById(activeSheet).classList.remove('open'); activeSheet=null; }
-  document.getElementById('sheetOverlay').classList.remove('open');
+function dismissBanner(action){
+  document.getElementById('backupBanner').classList.remove('show');
+  if(action==='snooze'){localStorage.setItem(VBK,(Date.now()-6*24*60*60*1000).toString());}// snooze 1 day
+  else if(action==='backup'){closeSheet();showExportModal(false);}
+  else if(action==='mute'){const s=JSON.parse(localStorage.getItem(VSET)||'{}');s.backupDays=0;localStorage.setItem(VSET,JSON.stringify(s));}
 }
-function showListMenu()  { openSheet('sheetListMenu'); }
-function openNoteMenu()  {
-  const note=notes.find(n=>n.id===currentId);
-  if (note) updatePinDisplay(note.pinned);
-  openSheet('sheetNoteMenu');
+function saveSetting(key,val){const s=JSON.parse(localStorage.getItem(VSET)||'{}');s[key]=val;localStorage.setItem(VSET,JSON.stringify(s));}
+function openSettingsModal(){
+  updateGdStatusBadge();
+  const s=JSON.parse(localStorage.getItem(VSET)||'{}');
+  const days=s.backupDays!=null?s.backupDays:7;
+  const radios=[7,14,30,0];
+  radios.forEach(v=>{const el=document.getElementById('br'+v);if(el)el.checked=days===v;});
+  document.getElementById('settingsNoteCount').textContent=notes.length;
+  try{const used=JSON.stringify(localStorage).length;document.getElementById('settingsStorage').textContent=used>1024?Math.round(used/1024)+'KB':used+'B';}catch{}
+  openModal('modalSettings');
 }
 
-// ── MODALS ──
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+// ── STATS / AUTOSAVE ──
+function updateStats(){const b=document.getElementById('noteBody').value,w=b.trim()?b.trim().split(/\s+/).length:0;document.getElementById('statWords').textContent=w;document.getElementById('statChars').textContent=b.length;}
+function setAS(s){const d=document.getElementById('asDot'),l=document.getElementById('asLabel');d.className='as-dot';if(s==='saving'){d.classList.add('saving');l.textContent='Saving…';}if(s==='saved'){d.classList.add('saved');l.textContent='Saved';}}
+
+// ── SHEETS / MODALS / NAV ──
+function go(id){['s-lock','s-list','s-editor'].forEach(s=>{const el=document.getElementById(s);if(s===id){el.classList.remove('hidden','slide-left');}else if(!el.classList.contains('hidden')){el.classList.add(id==='s-editor'?'slide-left':'hidden');}});}
+function goList(){saveNote(true);document.getElementById('s-editor').classList.add('hidden');document.getElementById('s-list').classList.remove('hidden','slide-left');renderList();}
+function openSheet(id){closeSheet();activeSheet=id;document.getElementById('sheetOverlay').classList.add('open');document.getElementById(id).classList.add('open');}
+function closeSheet(){if(activeSheet){document.getElementById(activeSheet).classList.remove('open');activeSheet=null;}document.getElementById('sheetOverlay').classList.remove('open');}
+function showListMenu(){openSheet('sheetListMenu');}
+function openNoteMenu(){const note=notes.find(n=>n.id===currentId);if(note)updatePinDisplay(note.pinned);openSheet('sheetNoteMenu');}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
 
 // ── PW VISIBILITY ──
-function togglePwVis(inputId, btn) {
-  const el=document.getElementById(inputId);
-  if (el.type==='password') { el.type='text'; btn.textContent='🙈'; }
-  else { el.type='password'; btn.textContent='👁'; }
-}
+function toggleVis(id,btn){const el=document.getElementById(id);if(el.type==='password'){el.type='text';btn.textContent='🙈';}else{el.type='password';btn.textContent='👁';}}
 
 // ── UTILS ──
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function fmtDate(iso){
-  const d=new Date(iso);
-  return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
-}
-function fmtShort(iso){
-  const d=new Date(iso),now=new Date(),diff=(now-d)/1000;
-  if(diff<60)return'Just now';
-  if(diff<3600)return Math.floor(diff/60)+'m ago';
-  if(diff<86400)return Math.floor(diff/3600)+'h ago';
-  if(diff<604800)return Math.floor(diff/86400)+'d ago';
-  return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
-}
+function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});}
+function fmtShort(iso){const d=new Date(iso),now=new Date(),diff=(now-d)/1000;if(diff<60)return'Just now';if(diff<3600)return Math.floor(diff/60)+'m ago';if(diff<86400)return Math.floor(diff/3600)+'h ago';if(diff<604800)return Math.floor(diff/86400)+'d ago';return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});}
 
 // ── TOAST ──
 let toastT;
-function toast(msg,type=''){
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.className='show '+(type||'');
-  clearTimeout(toastT); toastT=setTimeout(()=>el.className='',2800);
+function toast(msg,type=''){const el=document.getElementById('toast');el.textContent=msg;el.className='show '+(type||'');clearTimeout(toastT);toastT=setTimeout(()=>el.className='',2800);}
+
+
+// ── GOOGLE DRIVE SETUP WIZARD ──
+function openGdriveSetup(){
+  // Pre-fill if already set
+  const existing=localStorage.getItem('vault_gd_client_id')||'';
+  const inp=document.getElementById('gdClientIdInput');
+  if(inp) inp.value=existing;
+  // Show origin hint
+  const hint=document.getElementById('gdOriginHint');
+  if(hint) hint.textContent=window.location.origin||'https://your-site.github.io';
+  document.getElementById('gdSetupErr').textContent='';
+  showGdStep(existing?4:1);
+  closeModal('modalSettings');
+  openModal('modalGdriveSetup');
 }
-
-// ── KEYBOARD (desktop) ──
-document.addEventListener('keydown',e=>{
-  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveNote();}
-  if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();if(!document.getElementById('s-lock').classList.contains('hidden')===false)newNote();}
-  if(e.key==='Escape'){closeSheet();document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));}
-});
-
-// ── SWIPE BACK (Android) ──
-let touchStartX=0, touchStartY=0;
-document.addEventListener('touchstart',e=>{ touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY; },{passive:true});
-document.addEventListener('touchend',e=>{
-  const dx=e.changedTouches[0].clientX-touchStartX;
-  const dy=Math.abs(e.changedTouches[0].clientY-touchStartY);
-  if(dx>60&&dy<50&&!document.getElementById('s-editor').classList.contains('hidden')) goList();
-},{passive:true});
-</script>
-
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(r => console.log('SW registered'))
-      .catch(e => console.log('SW error', e));
+function showGdStep(n){
+  [1,2,3,4].forEach(i=>{
+    document.getElementById('gdStep'+i).style.display=i===n?'block':'none';
+    const tab=document.getElementById('stab'+i);
+    if(tab) tab.classList.toggle('active',i===n);
   });
 }
+function saveGdriveClientId(){
+  const val=(document.getElementById('gdClientIdInput').value||'').trim();
+  const err=document.getElementById('gdSetupErr');
+  if(!val){err.textContent='Please paste your Client ID.';return;}
+  if(!val.includes('.apps.googleusercontent.com')){err.textContent='That does not look like a valid Client ID. It should end in .apps.googleusercontent.com';return;}
+  localStorage.setItem('vault_gd_client_id',val);
+  gdToken=null; // reset token so they sign in fresh
+  closeModal('modalGdriveSetup');
+  updateGdStatusBadge();
+  toast('✅ Google Drive connected!','success');
+}
+function disconnectGdrive(){
+  localStorage.removeItem('vault_gd_client_id');
+  gdToken=null;
+  closeModal('modalGdriveSetup');
+  updateGdStatusBadge();
+  toast('Google Drive disconnected.');
+}
+function updateGdStatusBadge(){
+  const el=document.getElementById('gdStatusBadge');
+  if(!el) return;
+  const connected=!!(localStorage.getItem('vault_gd_client_id'));
+  el.style.background=connected?'var(--accent-glow)':'var(--bg)';
+  el.style.borderColor=connected?'var(--accent)':'var(--border)';
+  el.style.color=connected?'var(--accent)':'var(--muted)';
+  el.innerHTML=connected?'⬤ Connected':'⬤ Not connected';
+}
+
+// ── SWIPE BACK ──
+let tx=0,ty=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+document.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx,dy=Math.abs(e.changedTouches[0].clientY-ty);if(dx>70&&dy<60&&!document.getElementById('s-editor').classList.contains('hidden'))goList();},{passive:true});
+
+// ── KEYBOARD ──
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveNote();}if(e.key==='Escape'){closeSheet();document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));}});
+
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));}
 </script>
 </body>
 </html>
